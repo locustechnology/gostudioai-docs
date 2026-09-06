@@ -1,0 +1,120 @@
+name: Docs checks
+
+# Pushing to main IS the deploy — Mintlify rebuilds the live site from this repo.
+# These checks are the only gate between a corrupted file and the public docs site.
+# They exist because this content has twice been broken by Windows tooling writing a
+# UTF-8 BOM and by PowerShell backtick escapes eating characters inside .mdx files.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Byte hygiene (BOM, control chars, CR)
+        shell: bash
+        run: |
+          fail=0
+
+          # \x{FEFF} is the codepoint form; the \xEF\xBB\xBF byte form does not
+          # match under grep -P in a UTF-8 locale.
+          if git ls-files -z | xargs -0 grep -lIP '^\x{FEFF}'; then
+            echo "::error::UTF-8 BOM found in the files listed above"
+            fail=1
+          fi
+
+          # Formfeed / vertical tab / other control bytes: the signature of
+          # PowerShell backtick-escape corruption (`f became 0x0C, `n became a newline).
+          if git ls-files -z | xargs -0 grep -lIP '[\x00-\x08\x0B\x0C\x0E-\x1F]'; then
+            echo "::error::control character found in the files listed above"
+            fail=1
+          fi
+
+          if git ls-files -z | xargs -0 grep -lIP '\r'; then
+            echo "::error::CR byte found — files must be LF-only"
+            fail=1
+          fi
+
+          exit $fail
+
+      - name: Final newline
+        shell: bash
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            if [ -s "$f" ] && [ "$(tail -c1 "$f" | xxd -p)" != "0a" ]; then
+              echo "::error file=$f::file does not end with a newline"
+              fail=1
+            fi
+          done < <(git ls-files '*.mdx' '*.md' '*.json' '*.yaml' '*.yml')
+          exit $fail
+
+      - name: Balanced code fences
+        shell: bash
+        run: |
+          fail=0
+          while IFS= read -r f; do
+            n=$(grep -c '^```' "$f" || true)
+            if [ $((n % 2)) -ne 0 ]; then
+              echo "::error file=$f::odd number of code fences ($n) — the rest of the page renders as code"
+              fail=1
+            fi
+          done < <(git ls-files '*.mdx' '*.md')
+          exit $fail
+
+      - name: docs.json is valid JSON and matches the Mintlify schema
+        shell: bash
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('docs.json','utf8'))"
+          curl -sSfL -o /tmp/mintlify-schema.json https://mintlify.com/docs.json
+          npm i --no-save ajv@8 ajv-formats@3 >/dev/null 2>&1
+          node -e "
+            const Ajv=require('ajv'), addFormats=require('ajv-formats'), fs=require('fs');
+            const schema=JSON.parse(fs.readFileSync('/tmp/mintlify-schema.json','utf8'));
+            const doc=JSON.parse(fs.readFileSync('docs.json','utf8'));
+            const ajv=new Ajv({strict:false,allErrors:true,unicodeRegExp:false});
+            addFormats(ajv);
+            if(ajv.compile(schema)(doc)){ console.log('docs.json: VALID'); process.exit(0); }
+            console.error('docs.json: INVALID');
+            process.exit(1);
+          "
+
+      - name: Every navigation page exists
+        shell: bash
+        run: |
+          fail=0
+          while IFS= read -r p; do
+            if [ ! -f "$p.mdx" ] && [ ! -f "$p.md" ]; then
+              echo "::error::docs.json navigation references '$p' but no $p.mdx exists"
+              fail=1
+            fi
+          done < <(node -e "
+            const d=require('./docs.json');
+            const out=[];
+            (function walk(n){
+              if(Array.isArray(n)) return n.forEach(walk);
+              if(n && typeof n==='object'){
+                if(Array.isArray(n.pages)) n.pages.forEach(p=>typeof p==='string'?out.push(p):walk(p));
+                Object.values(n).forEach(walk);
+              }
+            })(d.navigation);
+            console.log([...new Set(out)].join('\n'));
+          ")
+          exit $fail
+
+      - name: OpenAPI spec is valid
+        run: npx --yes @apidevtools/swagger-cli validate openapi.yaml
+
+      - name: Broken links (advisory)
+        run: npx --yes mint broken-links
+        continue-on-error: true

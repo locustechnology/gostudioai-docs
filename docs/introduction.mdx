@@ -1,0 +1,90 @@
+---
+title: "Introduction"
+description: "The GoStudio v2 API gives you programmatic access to AI-powered image processing, watermark removal, and account management."
+---
+
+<img
+  src="https://www.gostudio.ai/og.webp"
+  alt="GoStudio API"
+  style={{ borderRadius: "0.5rem" }}
+/>
+
+## Overview
+
+The **GoStudio v2 REST API** is a JSON-over-HTTPS API built for developers who want to integrate AI image processing into their products. Every request is authenticated, every response follows a consistent envelope, and every error carries a machine-readable code.
+
+This documentation covers the **Watermark Remover** tool and the full suite of account-management endpoints.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/docs/quickstart">
+    Make your first authenticated API call in under 2 minutes.
+  </Card>
+  <Card title="Authentication" icon="lock" href="/docs/authentication">
+    Understand the three caller types and how tokens work.
+  </Card>
+  <Card title="Watermark Remover" icon="wand-magic-sparkles" href="/docs/guides/watermark-remover">
+    Remove watermarks from images with a single API call.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full reference for every endpoint, with a live Try-It console.
+  </Card>
+</CardGroup>
+
+## Base URL
+
+All API requests go to the following base URL:
+
+```
+https://www.gostudio.ai
+```
+
+All endpoints are prefixed with `/api/v2/`.
+
+## What you can do
+
+| Category | Description |
+|----------|-------------|
+| **Watermark Remover** | Remove watermarks from images using `lite`, `pro`, or `advance` AI models |
+| **My Account** | Read your profile, credit balance, generation history, images, and uploads |
+| **User Lookup** | Look up any user's data by UUID (internal/partner use only) |
+| **Generations** | Query generation logs across all tools |
+| **Media** | Upload images by URL for use in generation requests |
+| **Webhooks** | Receive RevenueCat billing events |
+
+## Response format
+
+Every response — success or error — uses a consistent envelope.
+
+**Success**
+```json
+{
+  "status": 200,
+  "data": {
+    "user_id": "049cae5c-e6ef-48ae-b8d8-69d9b44923e3",
+    "credits": 42,
+    "expires_at": "2026-01-31T00:00:00+00:00"
+  }
+}
+```
+
+**Error**
+```json
+{
+  "status": 401,
+  "error": {
+    "type": "authentication_error",
+    "code": "unauthorized",
+    "dev": 40100,
+    "message": "Missing or invalid Authorization Bearer token."
+  }
+}
+```
+
+## SDKs and clients
+
+The API is plain HTTPS + JSON, so it works with any HTTP client:
+
+- **curl** (all examples in this documentation)
+- **Node.js** — `fetch`, `axios`
+- **Python** — `httpx`, `requests`
+- **Postman, Insomnia, Bruno** — the API Reference is generated from an OpenAPI 3.0 spec, so it imports into any OpenAPI-compatible client

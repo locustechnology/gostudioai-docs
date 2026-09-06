@@ -1,0 +1,20 @@
+# Normalise all text to LF in the repository and in the working tree.
+# This site was previously broken twice by Windows tooling writing CRLF and a
+# UTF-8 BOM into docs.json and the .mdx pages. Keep everything LF, no BOM.
+* text=auto eol=lf
+
+*.json   text eol=lf
+*.yaml   text eol=lf
+*.yml    text eol=lf
+*.mdx    text eol=lf
+*.md     text eol=lf
+
+# Binary assets — never touch these
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.webp   binary
+*.woff   binary
+*.woff2  binary

@@ -1,0 +1,135 @@
+---
+title: Error Codes
+description: Reference for the error codes you are most likely to encounter, organized by HTTP status. Match on error.code; treat any unlisted code as its error.type implies.
+---
+
+Every error response uses the envelope below. Match on `error.code` in your error-handling logic — never on `error.message`.
+
+```json
+{
+  "status": 400,
+  "error": {
+    "type": "validation_error",
+    "code": "invalid_image_url",
+    "dev": 40034,
+    "message": "The image URL is not reachable or valid."
+  }
+}
+```
+
+The `Message` column below shows the human-facing copy for each code. Treat it as display text only: the wording can change without notice, and many endpoints replace it with a more specific reason for the same `code`. `dev` is a stable 5-digit internal code whose first three digits mirror the HTTP status. See [Response Format](/docs/response-format) for the full envelope and the `error.type` table.
+
+## HTTP 400 - Bad Request
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `missing_required_field` | `40000` | Required information is missing. |
+| `invalid_input` | `40001` | Some information is invalid. |
+| `invalid_url` | `40006` | The URL provided is not valid. |
+| `host_not_allowed` | `40007` | This image host is not allowed. |
+| `invalid_request_body` | `40008` | The request format is invalid. |
+| `invalid_model_key` | `40035` | The model key is not valid for this tool. |
+| `invalid_webhook_url` | `40036` | The webhook URL is not a valid HTTPS URL. |
+| `invalid_image_url` | `40034` | The image URL is not reachable or valid. |
+| `no_file_provided` | `40029` | No file was provided. |
+
+## HTTP 401 - Unauthorized
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `unauthorized` | `40100` | Missing or invalid Authorization Bearer token. |
+| `webhook_invalid_signature` | `40102` | Webhook signature is invalid. |
+
+## HTTP 402 - Payment Required
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `insufficient_credits` | `40200` | You do not have enough credits. |
+| `payment_failed` | `40201` | Payment could not be processed. |
+
+## HTTP 403 - Forbidden
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `forbidden` | `40300` | You do not have permission for this action. |
+| `account_restricted` | `40303` | Your account is restricted. |
+
+## HTTP 404 - Not Found
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `user_not_found` | `40400` | User not found. |
+| `record_not_found` | `40401` | The requested item was not found. |
+| `job_not_found` | `40404` | Job not found. |
+| `generation_log_not_found` | `40405` | Generation log not found. |
+
+## HTTP 422 - Unprocessable Content
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `image_too_small` | `42200` | The image is too small. Please use a larger image. |
+| `nsfw_content` | `42204` | This content is not allowed. |
+| `content_filtered` | `42205` | We couldn't generate this image. Please try a different prompt or image. |
+| `output_too_large` | `42208` | This scale would make the image larger than this model can produce. Choose a smaller scale or a different model. |
+
+## HTTP 429 - Too Many Requests
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `rate_limited` | `42900` | You are doing that too often. Please wait a moment. |
+| `provider_rate_limited` | `42901` | Too many requests. Please wait a moment. |
+
+The default rate limit is **20 requests per minute** per user, sliding window. Back off and retry after 60 seconds.
+
+## HTTP 500 - Server Error
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `internal_error` | `50000` | Something went wrong on our end. |
+| `db_read_failed` | `50001` | Could not load your data. Please try again. |
+| `generation_failed` | `50008` | We could not process your request. Please try again. |
+| `generation_no_output` | `50009` | We could not generate this image. Please try again. |
+| `upload_failed` | `50011` | Upload failed. Please try again. |
+| `storage_token_missing` | `50013` | Storage configuration is missing. |
+| `credit_check_failed` | `50014` | Could not check your credits. Please try again. |
+
+`storage_token_missing` is specific to `POST /api/v2/me/upload`. In the same situation `POST /api/v2/media/upload` returns `internal_error` (`50000`).
+
+## HTTP 502 - Bad Gateway
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `provider_bad_gateway` | `50200` | Generation is having trouble. Please try again. |
+| `provider_auth_failed` | `50201` | Generation is not available right now. Please try again later. |
+
+## HTTP 503 - Service Unavailable
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `service_unavailable` | `50300` | Service is temporarily unavailable. |
+
+Returned by any authenticated endpoint when the authentication backend is unreachable. Retry with backoff.
+
+## HTTP 504 - Gateway Timeout
+
+| Code | Dev | Message |
+|------|-----|---------|
+| `generation_timeout` | `50400` | The request took too long. Please try again. |
+
+## Per-file upload errors
+
+Upload endpoints report failures per item instead of failing the whole request. These values appear as `results[].error`, not as a top-level `error.code`, and they carry no `dev` number.
+
+For `POST /api/v2/me/upload`:
+
+| Code | Meaning |
+|------|---------|
+| `empty_file` | The file has zero bytes. |
+| `invalid_file_type` | The MIME type is not supported. |
+| `file_too_large` | The file exceeds the size limit for that media type. |
+| `upload_nsfw_rejected` | The image was rejected by the NSFW check. |
+| `upload_failed` | Storage write failed for this file. |
+
+The HTTP status stays `200` (`upload_success`, dev `20006`) as long as at least one file uploads — check `summary.failed` and inspect `results`. Only when every file fails does the endpoint return `500` `upload_failed` (`50011`), and even then the failing `results` are included alongside the error.
+
+`POST /api/v2/media/upload` reports its per-item failures the same way, using `storage_fetch_failed` when the source URL cannot be fetched, plus `invalid_file_type` and `upload_failed`.

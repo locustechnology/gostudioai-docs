@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+
+# Local env
+*.env
+.env*
+
+# Mintlify CLI
+node_modules/
+.mintlify/
+
+# Editor
+.vscode/
+.idea/

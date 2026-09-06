@@ -1,0 +1,109 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "GoStudio API",
+  "description": "REST API documentation for GoStudio — AI watermark removal, media uploads, and account management.",
+  "colors": {
+    "primary": "#7C3AED",
+    "light": "#A78BFA",
+    "dark": "#5B21B6"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://www.gostudio.ai"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["docs/introduction", "docs/quickstart", "docs/authentication"]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": ["docs/response-format", "docs/errors", "docs/pagination"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["docs/guides/watermark-remover"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "openapi.yaml"
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@gostudio.ai"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Open GoStudio",
+      "href": "https://www.gostudio.ai"
+    }
+  },
+  "footer": {
+    "socials": {
+      "website": "https://www.gostudio.ai",
+      "linkedin": "https://www.linkedin.com/company/106690651",
+      "instagram": "https://www.instagram.com/gostudioai/",
+      "facebook": "https://www.facebook.com/profile.php?id=61576148559681"
+    },
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "GoStudio", "href": "https://www.gostudio.ai" },
+          { "label": "Support", "href": "mailto:support@gostudio.ai" }
+        ]
+      },
+      {
+        "header": "Developers",
+        "items": [
+          { "label": "Quickstart", "href": "/docs/quickstart" },
+          { "label": "Authentication", "href": "/docs/authentication" },
+          { "label": "Error Codes", "href": "/docs/errors" }
+        ]
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "download-spec",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "search": {
+    "prompt": "Search the GoStudio API docs"
+  },
+  "errors": {
+    "404": {
+      "redirect": false
+    }
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["curl", "javascript", "python"]
+    }
+  }
+}

@@ -1,0 +1,234 @@
+---
+title: "Watermark Remover"
+description: "A complete walkthrough of the Watermark Remover API from model selection to error handling."
+---
+
+The Watermark Remover API strips watermarks from images using AI. You send a URL, the API returns a clean image, and credits are deducted for the work.
+
+The call is **synchronous** — one request, one finished result. There is no job queue to manage and nothing to poll.
+
+<Warning>
+  Synchronous does not mean fast. The API waits on the model for you, which can take up to **four minutes** on the higher tiers, and the request is cut off at five. Most HTTP clients default to a 30-second timeout and will abandon the request long before the image is ready. See Step 3 below for how to raise it.
+</Warning>
+
+## Before you start
+
+- A valid **Bearer token**. See [Authentication](/docs/authentication).
+- Enough **credits**. Check your balance at `GET /api/v2/me/credit-balance`.
+- A **publicly reachable image URL**. The API fetches the image server-side, so it cannot be behind a login, a signed-URL expiry, or a firewall.
+
+## Step 1 — Check available models
+
+Model IDs and prices change. Read them from the API rather than hard-coding them:
+
+```bash
+curl https://www.gostudio.ai/api/v2/apps/watermark-remover/info \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+The response includes every available model with its `tier`, its `pricing.credits`, and whether it `requires_prompt`:
+
+```json
+{
+  "status": 200,
+  "data": {
+    "default_model": "dewatermark/watermark-remover-pro",
+    "tiers": {
+      "lite": "dewatermark/watermark-remover-pro",
+      "pro": "replicate/pruna-image-edit",
+      "advance": "astria/seedream-5-pro"
+    },
+    "models": [
+      {
+        "id": "dewatermark/watermark-remover-pro",
+        "tier": "lite",
+        "provider": "dewatermark",
+        "requires_prompt": false,
+        "pricing": { "type": "flat", "credits": 4 }
+      }
+    ]
+  }
+}
+```
+
+## Step 2 — Choose a model tier
+
+`model_id` accepts either a full model ID or one of three friendly aliases:
+
+| `model_id` | Quality | Best for |
+|---|---|---|
+| `lite` | Standard | Most watermarks. By far the fastest, and never costs more than `pro`. |
+| `pro` | High | Complex, textured, or semi-transparent watermarks. |
+| `advance` | Best | Difficult watermarks where detail preservation matters. |
+
+Start with `lite` and only move up if the output disappoints. If you omit `model_id` entirely you get `lite`.
+
+<Note>
+  The tiers are aliases, not separate endpoints — `"model_id": "pro"` and `"model_id": "replicate/pruna-image-edit"` are the same request. Aliases stay stable when the underlying model is swapped, so prefer them.
+</Note>
+
+## Step 3 — Submit the image
+
+Note the explicit timeout in each example. This is the step people get wrong.
+
+<CodeGroup>
+```bash curl
+curl -X POST https://www.gostudio.ai/api/v2/apps/watermark-remover \
+  --max-time 300 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/watermarked.jpg",
+    "model_id": "lite"
+  }'
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/apps/watermark-remover", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    image_url: "https://example.com/watermarked.jpg",
+    model_id: "lite"
+  }),
+  // Without this, undici gives up long before a `pro` or `advance` job finishes.
+  signal: AbortSignal.timeout(300_000)
+});
+
+const { data } = await res.json();
+console.log(data.output_urls[0]);
+```
+
+```python Python
+import httpx
+
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/apps/watermark-remover",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "image_url": "https://example.com/watermarked.jpg",
+        "model_id": "lite",
+    },
+    timeout=300.0,  # httpx defaults to 5s — far too short.
+)
+
+print(r.json()["data"]["output_urls"][0])
+```
+</CodeGroup>
+
+### Request fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `image_url` | string | Yes | Publicly reachable `http` or `https` URL of the watermarked image. |
+| `model_id` | string | No | Model ID or tier alias. Defaults to `lite`. |
+| `prompt` | string | No | Extra guidance. Ignored by models whose `requires_prompt` is `false`. |
+| `webhook_url` | string | No | **HTTPS** URL to receive the result. See Step 5. |
+
+## Step 4 — Read the response
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": 12345,
+    "status": "completed",
+    "model_id": "dewatermark/watermark-remover-pro",
+    "output_urls": ["https://r2.gostudio.ai/g/k7p2qm9x/i/p4w7t1.jpg"],
+    "credits_deducted": 4,
+    "credit_balance": 38
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `job_id` | integer | ID of this generation. Keep it if you want to re-fetch the result later. |
+| `status` | string | Always `completed` on a `200`. |
+| `model_id` | string | The model that actually ran — useful when you passed a tier alias. |
+| `output_urls` | string[] | URLs for the cleaned images, ready to use immediately. |
+| `credits_deducted` | number | Credits consumed by this request. |
+| `credit_balance` | number | Your remaining balance afterwards. |
+
+Treat `output_urls` as opaque. The hostname and path shape are not part of the contract — results are normally served from the GoStudio CDN, but if mirroring does not complete you get the provider's own URL instead. Do not hardcode or CSP-pin the host.
+
+Credits are reserved when the job is accepted. If the generation fails, they are **refunded automatically** — a failed request does not cost you anything.
+
+## Step 5 — Optional: receive results by webhook
+
+Pass a `webhook_url` and GoStudio will `POST` the finished result to it, so you are not depending solely on holding the connection open.
+
+```json
+{
+  "image_url": "https://example.com/watermarked.jpg",
+  "model_id": "lite",
+  "webhook_url": "https://your-app.com/webhooks/gostudio"
+}
+```
+
+The delivered payload is the same `data` object shown in Step 4:
+
+```json
+{
+  "job_id": 12345,
+  "status": "completed",
+  "model_id": "dewatermark/watermark-remover-pro",
+  "output_urls": ["https://r2.gostudio.ai/g/k7p2qm9x/i/p4w7t1.jpg"],
+  "credits_deducted": 4,
+  "credit_balance": 38
+}
+```
+
+Delivery is best-effort and fire-and-forget: GoStudio sends a single `POST` and does not read your response status, so a non-`2xx` (or a timeout on your side) triggers no retry and no redelivery. Return quickly and do any real work asynchronously, and treat the HTTP response of the original request — not the webhook — as the source of truth. If you miss a delivery, re-fetch the result with `GET /api/v2/apps/watermark-remover/{jobId}` (Step 6).
+
+<Warning>
+  The webhook fires on **success only**. A failed generation is reported through the HTTP response and nothing is delivered to your endpoint, so never treat webhook silence as a failure signal — read the HTTP status too.
+</Warning>
+
+The URL must be HTTPS. A plain `http://` webhook is rejected up front with `400 invalid_webhook_url`.
+
+## Step 6 — Look up an earlier job
+
+You do not need this for a normal generation — Step 3 already returns the finished image. It is here for re-fetching the outputs of a past job, or checking on one whose connection dropped:
+
+```bash
+curl https://www.gostudio.ai/api/v2/apps/watermark-remover/12345 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": 12345,
+    "status": "completed",
+    "model_id": "dewatermark/watermark-remover-pro",
+    "output_urls": ["https://r2.gostudio.ai/g/k7p2qm9x/i/p4w7t1.jpg"],
+    "credits_deducted": 4,
+    "created_at": "2026-09-05T10:14:02Z",
+    "updated_at": "2026-09-05T10:14:29Z"
+  }
+}
+```
+
+`output_urls` and `credits_deducted` appear only once `status` is `completed`. When it is `failed`, you get an `error` field instead.
+
+## Common issues
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Client timeout, no response | Default HTTP timeout too short | Raise it to 300s, as in Step 3. The job usually still completes — look it up with Step 6. |
+| `400 invalid_image_url` | URL unreachable from our servers | Make sure it needs no authentication and has not expired. |
+| `400 invalid_model_key` | Unknown `model_id` | Use a tier alias or an ID from `/info`. |
+| `400 invalid_webhook_url` | Webhook is not HTTPS | Use an `https://` URL. |
+| `401 unauthorized` | Token expired (they last about an hour) | Fetch a fresh token — see [Authentication](/docs/authentication). |
+| `402 insufficient_credits` | Balance too low | Purchase credits in your GoStudio account. |
+| `422 content_filtered` | The model refused the image | Try a different image or a higher tier. |
+| `429 rate_limited` | Too many requests | Back off and retry. |
+| `502 provider_bad_gateway` | The AI provider returned an error, or we could not reach it | Retry. Credits are refunded automatically. |
+| `504 generation_timeout` | The provider did not finish within the 240s server-side polling window | Retry after a short delay. Credits are refunded automatically. |
+
+See [Errors](/docs/errors) for the full code reference.

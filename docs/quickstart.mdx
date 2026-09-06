@@ -1,0 +1,150 @@
+---
+title: "Quickstart"
+description: "Make your first authenticated API call in under 2 minutes."
+---
+
+This guide walks you from zero to a working watermark removal request. You need a GoStudio account and a Bearer token — there are no API keys to generate and no GoStudio SDK to install.
+
+## Step 1 — Get your Bearer token
+
+The GoStudio API authenticates via a **Supabase JWT** issued when you log in. Read it from your [Supabase Auth client](https://supabase.com/docs/reference/javascript/auth-getsession), which holds the session for the signed-in user:
+
+```javascript
+const { data: { session } } = await supabase.auth.getSession();
+const token = session.access_token;
+```
+
+Tokens are Supabase JWTs that expire after approximately **1 hour**, and the auth client refreshes them for you. Read the token from the client on each request rather than hardcoding it.
+
+<Warning>
+  Always handle `401 unauthorized` responses. Refresh the token through your auth client and retry the request.
+</Warning>
+
+<Accordion title="Grabbing a token by hand for a one-off test">
+  <Warning>
+    For manual exploration only — never ship this, and never paste a token into a shared document or issue tracker.
+  </Warning>
+
+  1. Open [gostudio.ai](https://www.gostudio.ai) and log in to your account.
+  2. Press **F12** to open DevTools → go to the **Application** tab.
+  3. Expand **Cookies** → click `https://www.gostudio.ai`.
+  4. Find the cookie named `sb-<project-ref>-auth-token`. Large sessions are split into numbered chunks (`sb-<project-ref>-auth-token.0`, `sb-<project-ref>-auth-token.1`, …) — concatenate their values in order.
+  5. URL-decode the concatenated value to get the session JSON, then copy the `access_token` string. It starts with `eyJ...`.
+
+  If the cookie format does not match what you see, get the token from your auth client instead — that is the supported path.
+</Accordion>
+
+## Step 2 — Verify your credentials
+
+Before running any generation, confirm your token works and check your credit balance:
+
+<CodeGroup>
+```bash curl
+curl https://www.gostudio.ai/api/v2/me/credit-balance \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/me/credit-balance", {
+  headers: { Authorization: "Bearer YOUR_TOKEN" }
+});
+const data = await res.json();
+console.log(data);
+```
+
+```python Python
+import httpx
+r = httpx.get(
+    "https://www.gostudio.ai/api/v2/me/credit-balance",
+    headers={"Authorization": "Bearer YOUR_TOKEN"}
+)
+print(r.json())
+```
+</CodeGroup>
+
+**Expected response**
+```json
+{
+  "status": 200,
+  "data": {
+    "user_id": "049cae5c-e6ef-48ae-b8d8-69d9b44923e3",
+    "credits": 42,
+    "expires_at": "2026-01-31T00:00:00+00:00"
+  }
+}
+```
+
+If you see `"credits": 0`, you will need to purchase credits before generating.
+If you see a `401`, your token is invalid or expired — repeat Step 1.
+
+## Step 3 — Remove a watermark
+
+Send a `POST` to `/api/v2/apps/watermark-remover` with an image URL and a model tier:
+
+<CodeGroup>
+```bash curl
+curl -X POST https://www.gostudio.ai/api/v2/apps/watermark-remover \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/image-with-watermark.jpg",
+    "model_id": "lite"
+  }'
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/apps/watermark-remover", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    image_url: "https://example.com/image-with-watermark.jpg",
+    model_id: "lite"
+  })
+});
+const data = await res.json();
+console.log(data.data.output_urls);
+```
+
+```python Python
+import httpx
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/apps/watermark-remover",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "image_url": "https://example.com/image-with-watermark.jpg",
+        "model_id": "lite"
+    }
+)
+print(r.json()["data"]["output_urls"])
+```
+</CodeGroup>
+
+**Expected response**
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": 12345,
+    "status": "completed",
+    "output_urls": ["https://r2.gostudio.ai/g/k7p2qm9x/i/p4w7t1.jpg"],
+    "credits_deducted": 4,
+    "credit_balance": 38
+  }
+}
+```
+
+The `output_urls` array contains the processed image(s), ready to use immediately. Treat the URLs as opaque — the hostname and path shape are not part of the contract, so do not hardcode or CSP-pin the host.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="lock" href="/docs/authentication">
+    Learn about caller types and token expiry.
+  </Card>
+  <Card title="Watermark Remover Guide" icon="wand-magic-sparkles" href="/docs/guides/watermark-remover">
+    Webhooks, model tiers, error handling, and more.
+  </Card>
+</CardGroup>

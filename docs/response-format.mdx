@@ -1,0 +1,98 @@
+---
+title: "Response Format"
+description: "All GoStudio API responses use a consistent JSON envelope regardless of success or failure."
+---
+
+## The envelope
+
+Every response body — success or error — wraps its payload in a top-level envelope. The `status` field always mirrors the HTTP status code.
+
+### Success
+
+```json
+{
+  "status": 200,
+  "data": {
+    "user_id": "049cae5c-e6ef-48ae-b8d8-69d9b44923e3",
+    "credits": 42,
+    "expires_at": "2026-01-31T00:00:00+00:00"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | `integer` | HTTP status code — always `200`, except `202` from `POST /api/v2/apps/watermark-remover/generate` when the model runs asynchronously |
+| `data` | `object` | The response payload. Shape varies per endpoint. |
+
+### Error
+
+```json
+{
+  "status": 400,
+  "error": {
+    "type": "validation_error",
+    "code": "invalid_image_url",
+    "dev": 40034,
+    "message": "The image URL is not reachable or valid."
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | `integer` | HTTP status code |
+| `error.type` | `string` | Broad error category (see table below) |
+| `error.code` | `string` | Machine-readable error identifier |
+| `error.dev` | `integer` | 5-digit internal developer code |
+| `error.message` | `string` | Human-readable description |
+
+## Error types
+
+| `error.type` | HTTP range | When it occurs |
+|-------------|-----------|----------------|
+| `authentication_error` | 400, 401, 404, 410 | Token missing, invalid, expired, or session not found |
+| `permission_error` | 403, 451 | Token valid but caller type not allowed |
+| `validation_error` | 400, 405, 406, 411, 413, 414, 415, 422 | Bad input — wrong field values, missing fields, invalid file |
+| `billing_error` | 400, 402, 500 | Insufficient credits, bad product ID, payment failed, credit ledger failure |
+| `rate_limit_error` | 429 | Too many requests in the sliding window |
+| `not_found_error` | 404 | Resource does not exist or was deleted |
+| `provider_error` | 400, 409, 422, 500, 502, 503, 504 | AI provider rejected, filtered, failed, or timed out the request |
+| `storage_error` | 500, 503 | File upload or CDN storage failure |
+| `system_error` | 408, 409, 500, 501, 502, 503 | Unexpected server-side error |
+
+HTTP status alone does not determine `error.type`: an HTTP 500 may carry `system_error`, `storage_error`, `billing_error` (credit-ledger failures) or `provider_error` (generation failures). Always branch on `error.code` or `error.dev`, not on the status code.
+
+## Developer codes
+
+The `dev` field is a 5-digit internal code that gives you a precise signal beyond the HTTP status. The first three digits mirror the HTTP status; the last two differentiate within that status.
+
+For example:
+- `40100` → `unauthorized` (HTTP 401)
+- `40200` → `insufficient_credits` (HTTP 402)
+- `40034` → `invalid_image_url` (HTTP 400)
+- `50000` → `internal_error` (HTTP 500)
+
+See the [Error Code Reference](/docs/errors) for the codes you are most likely to encounter.
+
+## Paginated responses
+
+List endpoints wrap their payload in an additional `data` + `pagination` layer:
+
+```json
+{
+  "status": 200,
+  "data": {
+    "data": [
+      { "id": 1, "status": "completed", "..." : "..." },
+      { "id": 2, "status": "completed", "..." : "..." }
+    ],
+    "pagination": {
+      "next_cursor": "eyJpZCI6Mn0=",
+      "has_more": true
+    }
+  }
+}
+```
+
+See [Pagination](/docs/pagination) for details on cursor-based traversal.
