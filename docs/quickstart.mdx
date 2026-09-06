@@ -34,18 +34,18 @@ Tokens are Supabase JWTs that expire after approximately **1 hour**, and the aut
   If the cookie format does not match what you see, get the token from your auth client instead — that is the supported path.
 </Accordion>
 
-## Step 2 — Verify your credentials
+## Step 2 — Verify your token and check model pricing
 
-Before running any generation, confirm your token works and check your credit balance:
+Before running any generation, confirm your token works and see which models you can use. `GET /apps/watermark-remover/info` does both — it is the cheapest call to prove your credentials, and it returns the current model IDs and their prices:
 
 <CodeGroup>
 ```bash curl
-curl https://www.gostudio.ai/api/v2/me/credit-balance \
+curl https://www.gostudio.ai/api/v2/apps/watermark-remover/info \
   -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
 ```javascript Node.js
-const res = await fetch("https://www.gostudio.ai/api/v2/me/credit-balance", {
+const res = await fetch("https://www.gostudio.ai/api/v2/apps/watermark-remover/info", {
   headers: { Authorization: "Bearer YOUR_TOKEN" }
 });
 const data = await res.json();
@@ -55,7 +55,7 @@ console.log(data);
 ```python Python
 import httpx
 r = httpx.get(
-    "https://www.gostudio.ai/api/v2/me/credit-balance",
+    "https://www.gostudio.ai/api/v2/apps/watermark-remover/info",
     headers={"Authorization": "Bearer YOUR_TOKEN"}
 )
 print(r.json())
@@ -67,15 +67,26 @@ print(r.json())
 {
   "status": 200,
   "data": {
-    "user_id": "049cae5c-e6ef-48ae-b8d8-69d9b44923e3",
-    "credits": 42,
-    "expires_at": "2026-01-31T00:00:00+00:00"
+    "default_model": "dewatermark/watermark-remover-pro",
+    "tiers": {
+      "lite": "dewatermark/watermark-remover-pro",
+      "pro": "replicate/pruna-image-edit",
+      "advance": "astria/seedream-5-pro"
+    },
+    "models": [
+      {
+        "id": "dewatermark/watermark-remover-pro",
+        "tier": "lite",
+        "provider": "dewatermark",
+        "requires_prompt": false,
+        "pricing": { "type": "flat", "credits": 4 }
+      }
+    ]
   }
 }
 ```
 
-If you see `"credits": 0`, you will need to purchase credits before generating.
-If you see a `401`, your token is invalid or expired — repeat Step 1.
+Read `pricing.credits` rather than hard-coding a cost — it is what your account will be charged. If you see a `401`, your token is invalid or expired; repeat Step 1.
 
 ## Step 3 — Remove a watermark
 

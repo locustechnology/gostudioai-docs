@@ -87,7 +87,7 @@ The navigation is where the two halves of the site are wired together:
 ]
 ```
 
-That single `"openapi"` line generates all 22 endpoint reference pages.
+That single `"openapi"` line generates all 6 endpoint reference pages.
 
 Two things worth knowing:
 
@@ -118,41 +118,42 @@ We do not import or install these. Mintlify provides them at build time.
 
 ### 2.3 `openapi.yaml` — the machine-readable half
 
-OpenAPI 3.0.3 describing **22 endpoints**, which become the entire "API Reference" tab: one
-page per endpoint with parameters, request and response schemas, example payloads, and a
-working "Try it" console.
+OpenAPI 3.0.3 describing the **6 Watermark Remover endpoints**, which become the entire
+"API Reference" tab: one page per endpoint with parameters, request and response schemas,
+example payloads, and a working "Try it" console.
 
 | Section | Contents |
 |---|---|
 | `info`, `servers` | Title, version, production base URL |
 | `security` | Bearer auth applied globally, overridden per-endpoint where public |
-| `tags` | The six sidebar groups |
-| `paths` | The 22 endpoints |
-| `components.schemas` | 27 reusable object definitions |
-| `components.responses` | 11 reusable error responses (401, 402, 422, 502, 503, 504, …) |
+| `tags` | The two sidebar groups |
+| `paths` | The 6 endpoints |
+| `components.schemas` | 10 reusable object definitions |
+| `components.responses` | 10 reusable error responses (401, 402, 422, 502, 503, 504, …) |
 
 Reuse matters: the `401 unauthorized` response is defined **once** and referenced many times
-via `$ref`. Fixing the wording fixes it everywhere. There are 227 `$ref`s over 44 distinct
+via `$ref`. Fixing the wording fixes it everywhere. There are 57 `$ref`s over 20 distinct
 targets, and all of them resolve.
 
-The 22 endpoints, by tag:
+The 6 endpoints, by tag:
 
 | Tag | Count | Endpoints |
 |---|---|---|
-| My Account | 6 | profile, credit balance, credit history, generations, images, samples |
-| Generations | 2 | list, get by ID |
 | Watermark Remover | 5 | orchestrate, info, job lookup, generate, record |
-| Media | 2 | direct file upload, upload by URL |
-| Users (Admin) | 5 | per-user summary, balance, generations, images, samples |
-| Webhooks | 2 | watermark provider callback, RevenueCat |
+| Webhooks | 1 | provider callback |
 
 Only the production server is listed. A `http://localhost:3000` entry was removed — a public
 spec should not offer a dev host in the playground's server dropdown.
 
-**Scope note:** the source repo has 33 route files under `app/api/v2`. The 11 excluded ones
-(`campaigns/*`, `email/*`, `blob/*`, `test/*`, `webhooks/resend/*`) are internal plumbing with
-no external consumers. That was a deliberate scoping decision — worth revisiting if the
-audience for the docs changes.
+**Scope note.** This site documents the **Watermark Remover tool only**. The v2 API has 33
+route files under `app/api/v2`; the account, generations, users, media and billing-webhook
+endpoints are all real and working, but are deliberately not published here. The intended
+public surface is the `watermark-remover` group of the Bruno collection at
+`web/app/docs/watermark-remover-api`, plus `/generate` and the provider `/webhook`.
+
+If the scope widens later, the endpoints come back from that same collection — and every
+claim about them must be re-derived from the route handlers before publishing, for the
+reason in §5.3.
 
 ---
 
@@ -175,7 +176,7 @@ audience for the docs changes.
         Mintlify build service
           ├─ parse docs.json          → fails here = nothing ships
           ├─ render each .mdx page
-          ├─ expand openapi.yaml      → 22 reference pages
+          ├─ expand openapi.yaml      → 6 reference pages
           ├─ build the search index
           └─ check internal links
                   │
@@ -278,9 +279,9 @@ schema: { type: string, example: "images,samples" } # ✓
 - **Repository:** `github.com/neerajgmf/gostudioai-docs`, branch `main`
 - **Content:** 16 files
 - **Documentation tab:** 7 hand-written pages in 3 groups
-- **API Reference tab:** 22 endpoints, generated from `openapi.yaml`
-- **Spec:** valid OpenAPI 3.0.3 — 22 paths, 22 unique operationIds, 27 schemas,
-  11 shared responses, 227 resolving `$ref`s, no BOM, LF-only
+- **API Reference tab:** 6 endpoints, generated from `openapi.yaml`
+- **Spec:** valid OpenAPI 3.0.3 — 6 paths, 6 unique operationIds, 10 schemas,
+  10 shared responses, 57 resolving `$ref`s, no BOM, LF-only
 - **Config:** `docs.json` validates against Mintlify's published schema
 - **Coverage:** 22 of 33 v2 routes; 11 internal routes intentionally excluded
 

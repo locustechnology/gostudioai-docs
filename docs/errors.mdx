@@ -90,10 +90,8 @@ The default rate limit is **20 requests per minute** per user, sliding window. B
 | `generation_failed` | `50008` | We could not process your request. Please try again. |
 | `generation_no_output` | `50009` | We could not generate this image. Please try again. |
 | `upload_failed` | `50011` | Upload failed. Please try again. |
-| `storage_token_missing` | `50013` | Storage configuration is missing. |
 | `credit_check_failed` | `50014` | Could not check your credits. Please try again. |
 
-`storage_token_missing` is specific to `POST /api/v2/me/upload`. In the same situation `POST /api/v2/media/upload` returns `internal_error` (`50000`).
 
 ## HTTP 502 - Bad Gateway
 
@@ -115,21 +113,3 @@ Returned by any authenticated endpoint when the authentication backend is unreac
 | Code | Dev | Message |
 |------|-----|---------|
 | `generation_timeout` | `50400` | The request took too long. Please try again. |
-
-## Per-file upload errors
-
-Upload endpoints report failures per item instead of failing the whole request. These values appear as `results[].error`, not as a top-level `error.code`, and they carry no `dev` number.
-
-For `POST /api/v2/me/upload`:
-
-| Code | Meaning |
-|------|---------|
-| `empty_file` | The file has zero bytes. |
-| `invalid_file_type` | The MIME type is not supported. |
-| `file_too_large` | The file exceeds the size limit for that media type. |
-| `upload_nsfw_rejected` | The image was rejected by the NSFW check. |
-| `upload_failed` | Storage write failed for this file. |
-
-The HTTP status stays `200` (`upload_success`, dev `20006`) as long as at least one file uploads — check `summary.failed` and inspect `results`. Only when every file fails does the endpoint return `500` `upload_failed` (`50011`), and even then the failing `results` are included alongside the error.
-
-`POST /api/v2/media/upload` reports its per-item failures the same way, using `storage_fetch_failed` when the source URL cannot be fetched, plus `invalid_file_type` and `upload_failed`.

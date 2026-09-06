@@ -74,23 +74,19 @@ User tokens expire after approximately **1 hour**. When a token expires, the API
 
 ## Endpoint access matrix
 
-| Endpoint group | `user` | `internal` | `external` |
+| Endpoint | `user` | `internal` | `external` |
 |---------------|--------|-----------|-----------|
-| `GET /me/*` | ✅ | ❌ | ❌ |
-| `POST /me/upload` | ✅ | ❌ | ❌ |
-| `GET /users/{userId}/*` | ❌ | ✅ | ✅ |
-| `GET /generations` | ✅ | ❌ | ❌ |
-| `GET /generations/{id}` | ✅ | ❌ | ❌ |
 | `POST /apps/watermark-remover` | ✅ | ❌ | ❌ |
 | `GET /apps/watermark-remover/info` | ✅ | ✅ | ❌ |
 | `GET /apps/watermark-remover/{jobId}` | ✅ | ❌ | ❌ |
-| `POST /media/upload` | ✅ | ✅ | ✅ |
-| `POST /webhooks/revenuecat` | ❌ | ❌ | ❌ (shared secret) |
+| `POST /apps/watermark-remover/generate` | ✅ | ❌ | ❌ |
+| `POST /apps/watermark-remover/record` | ✅ | ❌ | ❌ |
+| `POST /apps/watermark-remover/webhook` | ❌ | ❌ | ❌ (provider signature) |
 
 <Warning>
-  Every endpoint scoped to "the authenticated user" is `user`-only. An `internal` service token is accepted by the auth layer but carries no user identity, so these endpoints have no account to read and cannot serve it — you will see a `404` or a `500`, not a clean `403`. For service-to-service access to a specific account, use the `GET /users/{userId}/*` endpoints, which take the user ID explicitly.
+  Every endpoint that acts on "the authenticated user" is `user`-only. An `internal` service token is accepted by the auth layer but carries no user identity, so these endpoints have no account to charge or read and cannot serve it — you will see a `404` or a `500`, not a clean `403`. `GET /apps/watermark-remover/info` is the exception: it returns model metadata that belongs to no particular user, so a service token works there.
 </Warning>
 
 <Note>
-  `POST /media/upload` accepts all three caller types, but `user` callers may only upload for themselves. `user_id` is still **required** in the request body and must be a valid UUID — omitting it returns `400 invalid_input` — but for `user` callers its value is ignored and replaced with the authenticated user's ID. `internal` and `external` callers may upload on behalf of any user.
+  `POST /apps/watermark-remover/webhook` is called by the AI provider, not by you. It is authenticated by the provider's signature rather than by a caller token, and takes no GoStudio credentials.
 </Note>

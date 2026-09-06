@@ -1,7 +1,11 @@
 ---
 title: "Pagination"
-description: "All list endpoints in the GoStudio API use cursor-based pagination. This page explains how to traverse pages, filter results, and sort responses."
+description: "List endpoints in the GoStudio v2 API use cursor-based pagination. This page explains how to traverse pages, filter results, and sort responses."
 ---
+
+<Note>
+  No Watermark Remover endpoint is paginated — each one returns a single job or a single object. This page documents the convention used by the wider GoStudio v2 API, so that a list endpoint behaves the way you expect when you meet one.
+</Note>
 
 ## How it works
 
@@ -26,7 +30,7 @@ GoStudio uses **opaque cursor tokens** to mark your position in a result set. Ev
 Pass the `next_cursor` value as the `cursor` query parameter to fetch the next page:
 
 ```
-GET /api/v2/me/generations?cursor=MjAyNi0wMS0xNVQxMDozMDowMFo6MTAw
+GET /api/v2/<list-endpoint>?cursor=MjAyNi0wMS0xNVQxMDozMDowMFo6MTAw
 ```
 
 Cursors are opaque. Echo the value back verbatim; do not construct, parse, or modify it — its encoding can change without notice.
@@ -70,10 +74,10 @@ async function fetchAll(token, path) {
 
 ## Filtering
 
-List endpoints support additional filters specific to their resource. For example, on `/api/v2/me/generations`:
+List endpoints support additional filters specific to their resource, combined with the shared parameters above:
 
 ```
-GET /api/v2/me/generations?status=completed&media_type=image&limit=50
+GET /api/v2/<list-endpoint>?status=completed&media_type=image&limit=50
 ```
 
-See each endpoint's reference page for its available filter parameters.
+Unknown filter values are ignored rather than rejected, so a typo returns an unfiltered page instead of a `400`. See each endpoint's reference page for the filters it actually accepts.

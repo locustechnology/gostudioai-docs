@@ -14,7 +14,7 @@ The call is **synchronous** — one request, one finished result. There is no jo
 ## Before you start
 
 - A valid **Bearer token**. See [Authentication](/docs/authentication).
-- Enough **credits**. Check your balance at `GET /api/v2/me/credit-balance`.
+- Enough **credits**. A failed generation is refunded, but the request is rejected up front with `402 insufficient_credits` if your balance is too low. Check the per-model cost with `GET /apps/watermark-remover/info`.
 - A **publicly reachable image URL**. The API fetches the image server-side, so it cannot be behind a login, a signed-URL expiry, or a firewall.
 
 ## Step 1 — Check available models

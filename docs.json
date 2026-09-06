@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "GoStudio API",
-  "description": "REST API documentation for GoStudio — AI watermark removal, media uploads, and account management.",
+  "description": "REST API documentation for the GoStudio Watermark Remover — remove watermarks from images with a single authenticated call.",
   "colors": {
     "primary": "#7C3AED",
     "light": "#A78BFA",

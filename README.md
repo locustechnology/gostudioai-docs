@@ -1,6 +1,6 @@
 # GoStudio API Documentation
 
-Public documentation for the GoStudio v2 REST API, published with [Mintlify](https://mintlify.com).
+Public documentation for the GoStudio Watermark Remover API, published with [Mintlify](https://mintlify.com).
 
 <!-- TODO: add the live docs URL once the custom domain is set in dashboard.mintlify.com -->
 
@@ -15,7 +15,7 @@ A failed build leaves the previously deployed version live.
 | Change | File |
 |---|---|
 | Prose, guides, concepts | `docs/*.mdx` |
-| Endpoint reference (all 22 operations) | `openapi.yaml` |
+| Endpoint reference (6 watermark operations) | `openapi.yaml` |
 | Navigation, theme, logo, footer | `docs.json` |
 
 Adding a page needs **both** the `.mdx` file and its path registered in `docs.json`
