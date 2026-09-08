@@ -2,7 +2,7 @@
 
 Public documentation for the GoStudio Watermark Remover API, published with [Mintlify](https://mintlify.com).
 
-<!-- TODO: add the live docs URL once the custom domain is set in dashboard.mintlify.com -->
+**Live at [docs.gostudio.ai](https://docs.gostudio.ai).**
 
 ## How it deploys
 
@@ -14,12 +14,20 @@ A failed build leaves the previously deployed version live.
 
 | Change | File |
 |---|---|
-| Prose, guides, concepts | `docs/*.mdx` |
+| Prose, guides, concepts | `*.mdx` at the repo root, `guides/*.mdx` |
 | Endpoint reference (6 watermark operations) | `openapi.yaml` |
-| Navigation, theme, logo, footer | `docs.json` |
+| Navigation, colors, fonts, logo, footer, redirects | `docs.json` |
 
 Adding a page needs **both** the `.mdx` file and its path registered in `docs.json`
 navigation — a file that is not listed there does not appear on the site.
+
+**Page files live at the repo root, not in a `docs/` folder.** Mintlify builds each URL
+from the file path, so `docs/quickstart.mdx` would publish as `docs.gostudio.ai/docs/quickstart`.
+Keep new pages flat (or under `guides/`) so the domain does not say "docs" twice.
+
+Colors and typography come from the `gostudio-brand-guidelines` skill — brand violet
+`#5B16FE`, Poppins headings, Plus Jakarta Sans body. See DEPLOYMENT.md §2.4 before
+changing any of them.
 
 ## Local preview
 

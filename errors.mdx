@@ -17,7 +17,7 @@ Every error response uses the envelope below. Match on `error.code` in your erro
 }
 ```
 
-The `Message` column below shows the human-facing copy for each code. Treat it as display text only: the wording can change without notice, and many endpoints replace it with a more specific reason for the same `code`. `dev` is a stable 5-digit internal code whose first three digits mirror the HTTP status. See [Response Format](/docs/response-format) for the full envelope and the `error.type` table.
+The `Message` column below shows the human-facing copy for each code. Treat it as display text only: the wording can change without notice, and many endpoints replace it with a more specific reason for the same `code`. `dev` is a stable 5-digit internal code whose first three digits mirror the HTTP status. See [Response Format](/response-format) for the full envelope and the `error.type` table.
 
 ## HTTP 400 - Bad Request
 

@@ -4,9 +4,20 @@
   "name": "GoStudio API",
   "description": "REST API documentation for the GoStudio Watermark Remover — remove watermarks from images with a single authenticated call.",
   "colors": {
-    "primary": "#7C3AED",
-    "light": "#A78BFA",
-    "dark": "#5B21B6"
+    "primary": "#5B16FE",
+    "light": "#A077FE",
+    "dark": "#5B16FE"
+  },
+  "fonts": {
+    "heading": {
+      "family": "Poppins"
+    },
+    "body": {
+      "family": "Plus Jakarta Sans"
+    }
+  },
+  "appearance": {
+    "default": "light"
   },
   "favicon": "/favicon.svg",
   "logo": {
@@ -21,15 +32,15 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["docs/introduction", "docs/quickstart", "docs/authentication"]
+            "pages": ["introduction", "quickstart", "authentication"]
           },
           {
             "group": "Core Concepts",
-            "pages": ["docs/response-format", "docs/errors", "docs/pagination"]
+            "pages": ["response-format", "errors", "pagination"]
           },
           {
             "group": "Guides",
-            "pages": ["docs/guides/watermark-remover"]
+            "pages": ["guides/watermark-remover"]
           }
         ]
       },
@@ -70,13 +81,23 @@
       {
         "header": "Developers",
         "items": [
-          { "label": "Quickstart", "href": "/docs/quickstart" },
-          { "label": "Authentication", "href": "/docs/authentication" },
-          { "label": "Error Codes", "href": "/docs/errors" }
+          { "label": "Quickstart", "href": "/quickstart" },
+          { "label": "Authentication", "href": "/authentication" },
+          { "label": "Error Codes", "href": "/errors" }
         ]
       }
     ]
   },
+  "redirects": [
+    { "source": "/docs", "destination": "/introduction", "permanent": true },
+    { "source": "/docs/introduction", "destination": "/introduction", "permanent": true },
+    { "source": "/docs/quickstart", "destination": "/quickstart", "permanent": true },
+    { "source": "/docs/authentication", "destination": "/authentication", "permanent": true },
+    { "source": "/docs/response-format", "destination": "/response-format", "permanent": true },
+    { "source": "/docs/errors", "destination": "/errors", "permanent": true },
+    { "source": "/docs/pagination", "destination": "/pagination", "permanent": true },
+    { "source": "/docs/guides/:slug*", "destination": "/guides/:slug*", "permanent": true }
+  ],
   "contextual": {
     "options": [
       "copy",

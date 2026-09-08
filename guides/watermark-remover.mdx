@@ -13,7 +13,7 @@ The call is **synchronous** — one request, one finished result. There is no jo
 
 ## Before you start
 
-- A valid **Bearer token**. See [Authentication](/docs/authentication).
+- A valid **Bearer token**. See [Authentication](/authentication).
 - Enough **credits**. A failed generation is refunded, but the request is rejected up front with `402 insufficient_credits` if your balance is too low. Check the per-model cost with `GET /apps/watermark-remover/info`.
 - A **publicly reachable image URL**. The API fetches the image server-side, so it cannot be behind a login, a signed-URL expiry, or a firewall.
 
@@ -224,11 +224,11 @@ curl https://www.gostudio.ai/api/v2/apps/watermark-remover/12345 \
 | `400 invalid_image_url` | URL unreachable from our servers | Make sure it needs no authentication and has not expired. |
 | `400 invalid_model_key` | Unknown `model_id` | Use a tier alias or an ID from `/info`. |
 | `400 invalid_webhook_url` | Webhook is not HTTPS | Use an `https://` URL. |
-| `401 unauthorized` | Token expired (they last about an hour) | Fetch a fresh token — see [Authentication](/docs/authentication). |
+| `401 unauthorized` | Token expired (they last about an hour) | Fetch a fresh token — see [Authentication](/authentication). |
 | `402 insufficient_credits` | Balance too low | Purchase credits in your GoStudio account. |
 | `422 content_filtered` | The model refused the image | Try a different image or a higher tier. |
 | `429 rate_limited` | Too many requests | Back off and retry. |
 | `502 provider_bad_gateway` | The AI provider returned an error, or we could not reach it | Retry. Credits are refunded automatically. |
 | `504 generation_timeout` | The provider did not finish within the 240s server-side polling window | Retry after a short delay. Credits are refunded automatically. |
 
-See [Errors](/docs/errors) for the full code reference.
+See [Errors](/errors) for the full code reference.

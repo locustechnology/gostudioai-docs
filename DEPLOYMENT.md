@@ -1,6 +1,6 @@
 # How This Documentation Site Is Built and Deployed
 
-A reference for the GoStudio API documentation site (`neerajgmf/gostudioai-docs`).
+A reference for the GoStudio API documentation site (`locustechnology/gostudioai-docs`).
 No commands to run — this explains what exists, why, and how it reaches the web.
 
 ---
@@ -39,16 +39,22 @@ gostudioai-docs/
 ├── .gitattributes                     ← forces LF in the repo and working tree
 ├── .gitignore
 ├── .github/workflows/docs-check.yml   ← the pre-publish gate
-└── docs/
-    ├── introduction.mdx
-    ├── quickstart.mdx
-    ├── authentication.mdx
-    ├── response-format.mdx
-    ├── errors.mdx
-    ├── pagination.mdx
-    └── guides/
-        └── watermark-remover.mdx
+├── introduction.mdx
+├── quickstart.mdx
+├── authentication.mdx
+├── response-format.mdx
+├── errors.mdx
+├── pagination.mdx
+└── guides/
+    └── watermark-remover.mdx
 ```
+
+**The page files sit at the repository root on purpose.** Mintlify derives each URL from
+the file path, so a page inside a `docs/` folder is served at `/docs/…` — which on the
+`docs.gostudio.ai` domain reads as `docs.gostudio.ai/docs/introduction`, saying "docs"
+twice. Flattening the folder makes the URL `docs.gostudio.ai/introduction`. The old paths
+are kept alive by the `redirects` block in `docs.json`; do not reintroduce a `docs/`
+directory for content.
 
 There is deliberately **no** `package.json`, `node_modules/`, build output, or framework
 code. Mintlify supplies the entire website — theme, navigation, search, syntax
@@ -61,10 +67,13 @@ The single entry point. If Mintlify cannot parse it, nothing deploys. It carries
 | Block | What it controls |
 |---|---|
 | `$schema` | Points at Mintlify's published JSON Schema so editors and CI validate the file |
-| `name`, `theme`, `colors` | Site title, visual theme (`mint`), brand purple `#7C3AED` |
+| `name`, `theme`, `colors` | Site title, visual theme (`mint`), brand violet `#5B16FE` |
+| `fonts` | Poppins for headings, Plus Jakarta Sans for body — the same pairing as gostudio.ai |
+| `appearance` | Defaults to light mode, matching the marketing site; the toggle stays available |
 | `logo`, `favicon` | Brand marks; `logo.light` / `logo.dark` are the light- and dark-mode variants |
 | `navigation.tabs` | The two top tabs and the sidebar structure inside them |
 | `navbar`, `footer` | The "Open GoStudio" button, support link, and footer socials |
+| `redirects` | Keeps the retired `/docs/…` URLs resolving to their flattened equivalents |
 | `contextual` | The per-page menu: copy, download spec, open in ChatGPT / Claude / Cursor |
 | `api.playground`, `api.examples` | Interactive playground; curl / JavaScript / Python samples |
 
@@ -75,9 +84,9 @@ The navigation is where the two halves of the site are wired together:
   {
     "tab": "Documentation",
     "groups": [
-      { "group": "Get Started",   "pages": ["docs/introduction", "docs/quickstart", "docs/authentication"] },
-      { "group": "Core Concepts", "pages": ["docs/response-format", "docs/errors", "docs/pagination"] },
-      { "group": "Guides",        "pages": ["docs/guides/watermark-remover"] }
+      { "group": "Get Started",   "pages": ["introduction", "quickstart", "authentication"] },
+      { "group": "Core Concepts", "pages": ["response-format", "errors", "pagination"] },
+      { "group": "Guides",        "pages": ["guides/watermark-remover"] }
     ]
   },
   {
@@ -91,7 +100,7 @@ That single `"openapi"` line generates all 6 endpoint reference pages.
 
 Two things worth knowing:
 
-- **Page paths carry no `.mdx` extension.** `"docs/quickstart"` maps to `docs/quickstart.mdx`.
+- **Page paths carry no `.mdx` extension.** `"quickstart"` maps to `quickstart.mdx`.
   A path that does not resolve is a build error — CI checks this.
 - **A page not listed here does not appear on the site.** Creating the file is not enough.
 
@@ -155,6 +164,35 @@ If the scope widens later, the endpoints come back from that same collection —
 claim about them must be re-derived from the route handlers before publishing, for the
 reason in §5.3.
 
+### 2.4 Brand alignment
+
+The site has to read as GoStudio, not as a default Mintlify theme. The source of truth is
+the `gostudio-brand-guidelines` skill (`references/brand-guidelines/brand-guidelines.md`
+and the guideline PDF beside it), cross-checked against what the marketing app actually
+ships. Everything below is set in `docs.json`; do not hand-pick colours or fonts elsewhere.
+
+| Token | Value | Where it comes from |
+|---|---|---|
+| `colors.primary` | `#5B16FE` | The violet used for every primary CTA on gostudio.ai |
+| `colors.light` | `#A077FE` | Brand purple from the guidelines — the dark-mode accent |
+| `colors.dark` | `#5B16FE` | Same violet in light mode, so buttons never shift hue |
+| Heading font | Poppins | The brand typeface: headings, brand UI, navigation, CTAs |
+| Body font | Plus Jakarta Sans | The body face the web app self-hosts and sets on `<body>` |
+
+Two more palette entries exist and are deliberately *not* wired into `docs.json`: the
+brand gradient `#8371FF → #A077FE → #01C7E4` (it lives in the logo artwork, which already
+carries it) and the dark neutral `#2A2A2A`. The old config used `#7C3AED` — Tailwind's
+stock violet-600, which is close enough to look intentional and wrong enough to be
+off-brand. If a colour is not in the guidelines, it does not belong here.
+
+Poppins and Plus Jakarta Sans are both on Google Fonts, so naming the family is enough —
+no `source`/`format` self-hosting fields are needed.
+
+**Do not add a `weight` to either font entry.** The field is not a default, it is the whole
+request: `"weight": 400` makes Mintlify fetch `wght@0,400;1,400` and nothing else, so every
+`**bold**` run in the body copy falls back to a browser-synthesized faux bold. Omitting it
+fetches 400–800 for both families, which is what the headings and inline bold actually need.
+
 ---
 
 ## 3. The deploy pipeline
@@ -169,7 +207,7 @@ reason in §5.3.
                   │              encoding, fences, docs.json schema,
                   │              navigation paths, OpenAPI validity
                   ▼
-   GitHub  (neerajgmf/gostudioai-docs, branch: main)
+   GitHub  (locustechnology/gostudioai-docs, branch: main)
                   │
                   │  webhook from the Mintlify GitHub App
                   ▼
@@ -196,9 +234,10 @@ once and then never touched again:
 
 1. Sign in at `dashboard.mintlify.com`.
 2. Install the **Mintlify GitHub App** and grant it access to the
-   `neerajgmf/gostudioai-docs` repository.
+   `locustechnology/gostudioai-docs` repository.
 3. Set the deployment branch (`main`) and the docs directory (repository root).
-4. Optionally attach a custom domain and configure DNS.
+4. Attach the custom domain and configure DNS — this is done: the site is live at
+   `https://docs.gostudio.ai`.
 
 This is what turns a folder of Markdown into a hosted site. If documentation ever stops
 updating despite successful pushes, this connection — not the repo — is the first thing to check.
@@ -222,7 +261,7 @@ and `$schema` is what lets an editor catch a bad key before it ships.
 
 PowerShell's backtick is an escape character. Passing Markdown through it mangles code
 fences and inline backticks: `` `f `` becomes a form feed (0x0C) and `` `n `` becomes a real
-newline. `docs/pagination.mdx` shipped for months reading "When has_more is ␌alse, or ⏎ext_cursor
+newline. `pagination.mdx` shipped for months reading "When has_more is ␌alse, or ⏎ext_cursor
 is ⏎ull" — the leading letters of `false`, `next_cursor` and `null` had been consumed.
 
 A commit claiming to have fixed it did not. **Do not generate content files through
@@ -276,7 +315,8 @@ schema: { type: string, example: "images,samples" } # ✓
 
 ## 7. Current state
 
-- **Repository:** `github.com/neerajgmf/gostudioai-docs`, branch `main`
+- **Live site:** `https://docs.gostudio.ai` — pages at `/introduction`, `/quickstart`, …
+- **Repository:** `github.com/locustechnology/gostudioai-docs`, branch `main`
 - **Content:** 16 files
 - **Documentation tab:** 7 hand-written pages in 3 groups
 - **API Reference tab:** 6 endpoints, generated from `openapi.yaml`
