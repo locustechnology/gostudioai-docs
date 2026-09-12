@@ -56,7 +56,7 @@ jobs:
               echo "::error file=$f::file does not end with a newline"
               fail=1
             fi
-          done < <(git ls-files '*.mdx' '*.md' '*.json' '*.yaml' '*.yml')
+          done < <(git ls-files '*.mdx' '*.md' '*.json' '*.yaml' '*.yml' '*.css')
           exit $fail
 
       - name: Balanced code fences

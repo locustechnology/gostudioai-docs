@@ -28,6 +28,7 @@ Once the connection exists, `git push` *is* the deploy.
 ```text
 gostudioai-docs/
 ├── docs.json                          ← the control file (required)
+├── style.css                          ← the GoStudio design system, applied
 ├── openapi.yaml                       ← the whole API Reference tab
 ├── README.md
 ├── DEPLOYMENT.md                      ← this file
@@ -68,7 +69,7 @@ The single entry point. If Mintlify cannot parse it, nothing deploys. It carries
 |---|---|
 | `$schema` | Points at Mintlify's published JSON Schema so editors and CI validate the file |
 | `name`, `theme`, `colors` | Site title, visual theme (`mint`), brand violet `#5B16FE` |
-| `fonts` | Poppins for headings, Plus Jakarta Sans for body — the same pairing as gostudio.ai |
+| `fonts` | Plus Jakarta Sans for headings, Poppins for body — the pairing in `design-system.ts` |
 | `appearance` | Defaults to light mode, matching the marketing site; the toggle stays available |
 | `logo`, `favicon` | Brand marks; `logo.light` / `logo.dark` are the light- and dark-mode variants |
 | `navigation.tabs` | The two top tabs and the sidebar structure inside them |
@@ -164,34 +165,68 @@ If the scope widens later, the endpoints come back from that same collection —
 claim about them must be re-derived from the route handlers before publishing, for the
 reason in §5.3.
 
-### 2.4 Brand alignment
+### 2.4 Brand alignment — `docs.json` + `style.css`
 
 The site has to read as GoStudio, not as a default Mintlify theme. The source of truth is
-the `gostudio-brand-guidelines` skill (`references/brand-guidelines/brand-guidelines.md`
-and the guideline PDF beside it), cross-checked against what the marketing app actually
-ships. Everything below is set in `docs.json`; do not hand-pick colours or fonts elsewhere.
+**`lib/design-system.ts` in the `web` repository**, backed by the `gostudio-brand-guidelines`
+skill. `docs.json` carries the handful of knobs Mintlify exposes; `style.css` carries the
+rest. Do not hand-pick a colour, size or weight in an `.mdx` file.
+
+**Which token set.** `design-system.ts` ships three: `ds` (marketing landing pages),
+`insidePage` (the logged-in app shell) and `studio` (the tool workspace). A documentation
+site is an interior product surface, so **`insidePage` governs** — panel white, the ten-step
+size scale, the two-weight rule — with the shared `colors` object supplying the brand.
 
 | Token | Value | Where it comes from |
 |---|---|---|
-| `colors.primary` | `#5B16FE` | The violet used for every primary CTA on gostudio.ai |
-| `colors.light` | `#A077FE` | Brand purple from the guidelines — the dark-mode accent |
-| `colors.dark` | `#5B16FE` | Same violet in light mode, so buttons never shift hue |
-| Heading font | Poppins | The brand typeface: headings, brand UI, navigation, CTAs |
-| Body font | Plus Jakarta Sans | The body face the web app self-hosts and sets on `<body>` |
+| `colors.primary` / `.dark` | `#5B16FE` | `colors.brandHex` — every primary CTA on gostudio.ai |
+| `colors.light` | `#A077FE` | Guideline purple; the dark-mode accent |
+| Heading font | Plus Jakarta Sans | `font.h1` / `font.h2` / `insidePage.fonts.pageTitle` are all `font-jakarta` |
+| Body font | Poppins | `font.paragraph` and every `insidePage.fonts.*` body token is `font-poppins` |
+| Heading text | `#18181B` | `colors.heading` |
+| Body text | `#71717A` | `colors.muted` |
+| Neutral ramp | Tailwind Zinc | `#18181B`, `#71717A`, `#52525B`, `#3F3F46`, `#A1A1AA` all appear verbatim in `design-system.ts` |
 
-Two more palette entries exist and are deliberately *not* wired into `docs.json`: the
-brand gradient `#8371FF → #A077FE → #01C7E4` (it lives in the logo artwork, which already
-carries it) and the dark neutral `#2A2A2A`. The old config used `#7C3AED` — Tailwind's
-stock violet-600, which is close enough to look intentional and wrong enough to be
-off-brand. If a colour is not in the guidelines, it does not belong here.
-
-Poppins and Plus Jakarta Sans are both on Google Fonts, so naming the family is enough —
-no `source`/`format` self-hosting fields are needed.
+**The font pairing is Plus Jakarta Sans for headings, Poppins for body — not the reverse.**
+It shipped backwards once. The brand guidelines name Poppins as "the main brand typeface",
+which reads like a body-copy instruction and is not one: in the actual design system Poppins
+carries h3–h6 and all body/UI text, while h1, h2 and every page/section title are
+`font-jakarta`. Check `design-system.ts`, not the PDF, before changing this.
 
 **Do not add a `weight` to either font entry.** The field is not a default, it is the whole
 request: `"weight": 400` makes Mintlify fetch `wght@0,400;1,400` and nothing else, so every
 `**bold**` run in the body copy falls back to a browser-synthesized faux bold. Omitting it
 fetches 400–800 for both families, which is what the headings and inline bold actually need.
+
+#### What `style.css` does
+
+Mintlify picks up a `style.css` at the repository root automatically and injects it after
+its own theme CSS, so same-specificity rules win. Three things happen there:
+
+1. **The neutral ramp is retinted.** Mintlify derives its whole theme from `--gray-50` …
+   `--gray-950` and ships a purple-tinted ramp (`--gray-500` is `114 112 119`). Overriding
+   those eleven variables with Zinc does most of the work in one place, because the design
+   system's neutrals *are* Zinc.
+2. **The two-weight rule is enforced.** `insidePage` permits exactly two weights: 400 for
+   all text including headings, 500 for buttons only. Mintlify ships `font-semibold` on
+   headings, card titles, sidebar items and the eyebrow, so each is pinned back to 400 —
+   a heading reads as a heading because it is bigger and darker, not heavier.
+3. **The size scale is applied.** Everything comes off the ten-step scale
+   (32 · 28 · 24 · 22 · 20 · 18 · 16 · 14 · 13 · 12 · 11). The page title and eyebrow sit
+   one step above their `insidePage` values because docs body copy runs at 16px rather than
+   the app shell's 14px; the ratio between them is preserved.
+
+One deliberate deviation is recorded at the top of `style.css`: Markdown `**strong**`
+renders at 500 and `#18181B` rather than vanishing into the body colour. The two-weight rule
+was written for app chrome, where there is no inline emphasis; API prose leans on it.
+
+Two selector traps, both already handled — re-check them if Mintlify's DOM changes:
+
+- A `<Card>` title is an `<h2>` inside `.mdx-content`, so an unqualified `.mdx-content h2`
+  rule outranks the card-title rule and inflates every card title to section-heading size.
+  Every heading selector excludes `[data-component-part="card-title"]`.
+- `#topbar-cta-button` is the `<li>`, not the control. The fill is an absolutely-positioned
+  `<span class="bg-primary-dark">` behind the label, which is where the brand gradient goes.
 
 ---
 
