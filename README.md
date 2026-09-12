@@ -17,6 +17,7 @@ A failed build leaves the previously deployed version live.
 | Prose, guides, concepts | `*.mdx` at the repo root, `guides/*.mdx` |
 | Endpoint reference (6 watermark operations) | `openapi.yaml` |
 | Navigation, colors, fonts, logo, footer, redirects | `docs.json` |
+| Type scale, weights, spacing, component styling | `style.css` |
 
 Adding a page needs **both** the `.mdx` file and its path registered in `docs.json`
 navigation — a file that is not listed there does not appear on the site.
@@ -25,9 +26,11 @@ navigation — a file that is not listed there does not appear on the site.
 from the file path, so `docs/quickstart.mdx` would publish as `docs.gostudio.ai/docs/quickstart`.
 Keep new pages flat (or under `guides/`) so the domain does not say "docs" twice.
 
-Colors and typography come from the `gostudio-brand-guidelines` skill — brand violet
-`#5B16FE`, Poppins headings, Plus Jakarta Sans body. See DEPLOYMENT.md §2.4 before
-changing any of them.
+Colors and typography are ported from `lib/design-system.ts` in the `web` repository —
+brand violet `#5B16FE`, **Plus Jakarta Sans headings, Poppins body** (that order; it
+shipped backwards once), `#18181B` headings on `#71717A` body copy, and the two-weight
+rule: 400 for all text, 500 for buttons only. `docs.json` sets what Mintlify exposes and
+`style.css` does the rest. Read DEPLOYMENT.md §2.4 before changing any of it.
 
 ## Local preview
 
