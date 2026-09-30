@@ -1,0 +1,92 @@
+---
+title: "Polling Job Status"
+description: "Use GET /api/v2/apps/job/{job_id} to check the status of any GoStudio generation job."
+---
+
+## Overview
+
+The **Job Status** endpoint lets you look up the current state of any GoStudio generation job by its encoded ID. It works across all tools — watermark remover, age modifier, headshot photo, group photo, and more.
+
+You only need this endpoint in two situations:
+
+1. **The connection dropped** during a generation call and you didn't receive the response.
+2. **You want to re-fetch output URLs** from a job that completed earlier.
+
+For normal integrations, the primary generation endpoint (e.g. `POST /api/v2/apps/watermark-remover`) already waits for the result and returns it directly — you don't need to poll separately.
+
+---
+
+## The job_id
+
+Every generation response includes a `job_id` field. This is a **UUID-encoded opaque string**, not a raw integer — for example:
+
+```
+5a3f1e7d-9b4c-1a51-0b36-c893429659b5
+```
+
+Pass this value directly as the path parameter. Do not construct or modify it.
+
+---
+
+## Job lifecycle
+
+| Status | Meaning | `output_urls` | `error` |
+|--------|---------|--------------|---------|
+| `pending` | Created, not yet started | absent | absent |
+| `processing` | Being processed by the provider | absent | absent |
+| `completed` | Finished successfully | present | absent |
+| `failed` | Job failed | absent | present |
+| `abandoned` | Timed out or abandoned | absent | `"Job was abandoned"` |
+
+---
+
+## Example request
+
+```bash
+curl https://www.gostudio.ai/api/v2/apps/job/5a3f1e7d-9b4c-1a51-0b36-c893429659b5 \
+  -H "Authorization: Bearer <your-jwt>"
+```
+
+## Example response (completed)
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": "5a3f1e7d-9b4c-1a51-0b36-c893429659b5",
+    "status": "completed",
+    "tool_name": "watermark_remover",
+    "output_urls": ["https://cdn.gostudio.ai/outputs/result.jpg"],
+    "created_at": "2026-09-30T10:00:00Z",
+    "updated_at": "2026-09-30T10:01:30Z"
+  }
+}
+```
+
+## Example response (failed)
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": "5a3f1e7d-9b4c-1a51-0b36-c893429659b5",
+    "status": "failed",
+    "tool_name": "watermark_remover",
+    "error": "Provider returned no output.",
+    "created_at": "2026-09-30T10:00:00Z",
+    "updated_at": "2026-09-30T10:00:45Z"
+  }
+}
+```
+
+---
+
+## Ownership
+
+`user` callers can only retrieve jobs they own. If you request a job that belongs to a different user, the endpoint returns `404 job_not_found` rather than a `403`, to avoid leaking job existence.
+
+---
+
+## Rate limit
+
+30 requests per minute per caller. If you need to poll actively, use a 3-second interval with a 4-minute timeout — matching the same values recommended for async watermark jobs.

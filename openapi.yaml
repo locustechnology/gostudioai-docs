@@ -24,6 +24,8 @@ security:
 tags:
   - name: Watermark Remover
     description: AI watermark removal — orchestration, model metadata, and job polling.
+  - name: Job Status
+    description: Generic job polling — works across all GoStudio tools.
   - name: Webhooks
     description: Endpoints called by external services, not by your application.
 
@@ -344,6 +346,68 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
+  /api/v2/apps/job/{job_id}:
+    get:
+      tags: [Job Status]
+      summary: Get job status
+      description: >
+        Returns the current status and results of a generation job by its
+        encoded ID. Works across all GoStudio tools — watermark remover,
+        age modifier, headshot photo, group photo, and others.
+
+
+        The `job_id` in the path is a UUID-encoded opaque string, not a raw
+        integer. Use the `job_id` value returned by the generation endpoint
+        that created the job; do not construct or guess this value.
+
+
+        `output_urls` is only present once `status` is `completed`.
+        `error` is only present when `status` is `failed` or `abandoned`.
+
+
+        **Ownership:** `user` callers can only retrieve jobs they own. Other
+        caller types may access any job.
+
+
+        Allowed callers: `user`, `internal`, `external`.
+      operationId: getJobStatus
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: UUID-encoded job identifier returned by the generation endpoint.
+          schema: { type: string, example: "5a3f1e7d-9b4c-1a51-0b36-c893429659b5" }
+      responses:
+        "200":
+          description: Job status returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/JobStatusResult" }
+        "400":
+          description: The job_id is not a valid encoded job identifier.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 400
+                error: { type: validation_error, code: invalid_input, dev: 40001, message: "jobId is not a valid encoded job identifier." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Job not found, or not owned by the authenticated user.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 404
+                error: { type: not_found_error, code: job_not_found, dev: 40404, message: "Job not found." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /api/v2/apps/watermark-remover/webhook:
     post:
       tags: [Webhooks]
@@ -502,6 +566,40 @@ components:
             code: { type: string, example: invalid_input }
             dev: { type: integer, example: 40001 }
             message: { type: string, example: "Some information is invalid." }
+
+    JobStatusResult:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: UUID-encoded job identifier.
+          example: "5a3f1e7d-9b4c-1a51-0b36-c893429659b5"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, abandoned]
+          description: >
+            Current state of the job. `output_urls` is populated only when
+            `completed`; `error` is populated only when `failed` or
+            `abandoned`.
+        tool_name:
+          type: string
+          description: The GoStudio tool that created this job.
+          example: watermark_remover
+        output_urls:
+          type: array
+          description: CDN URLs for the finished images. Present only when `status` is `completed`.
+          items: { type: string, format: uri }
+        error:
+          type: string
+          description: Sanitized failure reason. Present only when `status` is `failed` or `abandoned`.
+        created_at:
+          type: string
+          format: date-time
+          description: When the job was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the job was last updated.
 
     WatermarkRequest:
       type: object
