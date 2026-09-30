@@ -40,7 +40,7 @@
           },
           {
             "group": "Guides",
-            "pages": ["guides/watermark-remover"]
+            "pages": ["guides/watermark-remover", "guides/job-status"]
           }
         ]
       },
