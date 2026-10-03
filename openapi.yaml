@@ -1,18 +1,16 @@
 openapi: 3.0.3
 info:
-  title: GoStudio Watermark Remover API
+  title: GoStudio API
   version: "2.0.0"
   description: >
-    The Watermark Remover endpoints of the GoStudio v2 REST API. Every response
-    uses a standard envelope: successes return `{ status, data }`; errors return
-    `{ status, error: { type, code, dev, message } }`.
+    The GoStudio v2 REST API. Every response uses a standard envelope:
+    successes return `{ status, data }`; errors return
+    `{ status, error: { type, code, message } }`.
 
 
-    Every endpoint here takes a **Supabase user JWT** as a Bearer token. An
-    `internal` service token is accepted by the auth layer but carries no user
-    identity, so it cannot be used to generate or look up a job. The one
-    exception is the provider callback, which is authenticated by signature
-    rather than by a caller token.
+    All endpoints require a **Bearer token** in the `Authorization` header.
+    The one exception is the provider webhook callback, which is authenticated
+    by signature.
 
 servers:
   - url: https://www.gostudio.ai
@@ -24,6 +22,14 @@ security:
 tags:
   - name: Watermark Remover
     description: AI watermark removal — orchestration, model metadata, and job polling.
+  - name: Photo
+    description: AI photo generation — generate, recreate, and manage trained profile photos.
+  - name: Image
+    description: Image utilities — group photo composition and image-to-prompt analysis.
+  - name: Media
+    description: Media upload and CDN management.
+  - name: Apps
+    description: GoStudio application tools — age modifier and other transformations.
   - name: Job Status
     description: Generic job polling — works across all GoStudio tools.
   - name: Webhooks
@@ -188,74 +194,6 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
-  /api/v2/apps/watermark-remover/generate:
-    post:
-      tags: [Watermark Remover]
-      summary: Generate only (no logging or billing)
-      description: >
-        Runs the model and returns the output without writing a generation log
-        or deducting credits. The result never appears in
-        `/api/v2/me/generations`, and it cannot be finalized through `/record` —
-        that endpoint only finalizes a generation log that already exists, and
-        nothing creates one for this call. Use it only when you do your own
-        logging and billing outside GoStudio; most integrations should use
-        `POST /api/v2/apps/watermark-remover` instead, which logs the job and
-        charges credits for you.
-
-
-        `webhook_url` also behaves differently here: it is registered directly
-        with the upstream model provider as its own callback, so your server
-        receives the provider's raw, provider-specific body rather than the
-        GoStudio result payload. Synchronous models — including the default
-        `lite` tier — ignore it and never call back at all.
-
-
-        Allowed callers: `user`. An internal service token passes the auth gate
-        but carries no user context, so it cannot start a generation here.
-      operationId: generateWatermarkRemoval
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/WatermarkGenerateRequest" }
-      responses:
-        "200":
-          description: Generation completed synchronously.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: integer, example: 200 }
-                  data: { $ref: "#/components/schemas/WatermarkGenerateSyncResult" }
-        "202":
-          description: Generation accepted and running asynchronously.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: integer, example: 202 }
-                  data: { $ref: "#/components/schemas/WatermarkGenerateAsyncResult" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "422": { $ref: "#/components/responses/UnprocessableContent" }
-        "429": { $ref: "#/components/responses/RateLimited" }
-        "500": { $ref: "#/components/responses/ServerError" }
-        "502":
-          description: >
-            The upstream model provider failed or was unreachable. Because this
-            endpoint writes no generation log and deducts no credits, nothing is
-            recorded and there is nothing to refund — just retry the call.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ErrorResponse" }
-              example:
-                status: 502
-                error: { type: provider_error, code: provider_bad_gateway, dev: 50200, message: "Generation is having trouble right now. Please try again." }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
-
   /api/v2/apps/watermark-remover/record:
     post:
       tags: [Watermark Remover]
@@ -353,12 +291,14 @@ paths:
       description: >
         Returns the current status and results of a generation job by its
         encoded ID. Works across all GoStudio tools — watermark remover,
-        age modifier, headshot photo, group photo, and others.
+        photo generation, photo recreation, group photo, age modifier, and
+        others.
 
 
-        The `job_id` in the path is a UUID-encoded opaque string, not a raw
-        integer. Use the `job_id` value returned by the generation endpoint
-        that created the job; do not construct or guess this value.
+        Use the `job_id` value returned by the generation endpoint that
+        created the job — photo endpoints (`/api/v2/photo/*` and
+        `/api/v2/image/group-photo`) return an encoded string `job_id`
+        that is used here directly. Do not construct or guess this value.
 
 
         `output_urls` is only present once `status` is `completed`.
@@ -439,6 +379,550 @@ paths:
                 type: object
                 properties:
                   received: { type: boolean, example: true }
+
+  /api/v2/photo/generate:
+    post:
+      tags: [Photo]
+      summary: Generate a photo from a text prompt
+      description: >
+        Generates one or more photos from a text prompt. Optionally locks
+        identity to one or more trained profiles by including their IDs.
+
+
+        The call blocks until generation completes and returns the finished
+        image URLs in the response. Credits are deducted before generation
+        begins and refunded if the job fails.
+
+
+        If `profile_ids` are provided, any invalid or inactive profiles are
+        silently filtered. If all provided profiles are invalid, the request
+        returns `trained_profile_not_found`.
+      operationId: generatePhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoGenerateRequest" }
+            examples:
+              basic:
+                summary: Simple prompt
+                value:
+                  prompt: "A professional headshot in a modern office"
+              with_profiles:
+                summary: With profile identity lock
+                value:
+                  prompt: "A professional headshot in a modern office"
+                  profile_ids: [42]
+                  num_output_images: 2
+                  aspect_ratio: "3:4"
+      responses:
+        "200":
+          description: Generation completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/GenerationResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: One or more profile IDs are invalid or inaccessible.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 404
+                error: { type: trained_profile_not_found, code: 40403, message: "Trained profile not found." }
+        "409":
+          description: One or more profiles exist but are not yet ready for generation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 409
+                error: { type: trained_profile_not_ready, code: 40901, message: "Trained profile is not ready." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /api/v2/photo/recreate:
+    post:
+      tags: [Photo]
+      summary: Recreate a photo using a reference image
+      description: >
+        Recreates a photo by combining an input image with a reference style
+        or scene image. Optionally locks identity to one or more trained
+        profiles.
+
+
+        Both `input_image_url` and `reference_image_url` are required. The
+        call blocks until generation completes. Credits are deducted before
+        generation begins and refunded if the job fails.
+
+
+        If `profile_ids` are provided and all are invalid, the request
+        returns `trained_profile_not_found`.
+      operationId: recreatePhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoRecreateRequest" }
+            examples:
+              basic:
+                summary: Basic recreation
+                value:
+                  input_image_url: "https://example.com/photo.jpg"
+                  reference_image_url: "https://example.com/reference.jpg"
+              with_instructions:
+                summary: With instructions and profile
+                value:
+                  input_image_url: "https://example.com/photo.jpg"
+                  reference_image_url: "https://example.com/reference.jpg"
+                  instructions: "Make it look more professional"
+                  profile_ids: [42]
+      responses:
+        "200":
+          description: Recreation completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/GenerationResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: One or more profile IDs are invalid or inaccessible.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 404
+                error: { type: trained_profile_not_found, code: 40403, message: "Trained profile not found." }
+        "409":
+          description: One or more profiles exist but are not yet ready for generation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 409
+                error: { type: trained_profile_not_ready, code: 40901, message: "Trained profile is not ready." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /api/v2/photo/recreate-group:
+    post:
+      tags: [Photo]
+      summary: Recreate a group photo using trained profiles
+      description: >
+        Generates a group photo by placing 2–10 trained profiles into a scene
+        derived from a reference image. The aspect ratio is auto-detected from
+        the reference image; an explicit `aspect_ratio` parameter overrides it.
+
+
+        At least 2 valid, ready profiles must be provided. If fewer than 2
+        pass validation, the request returns `trained_profile_not_found`.
+        Credits are deducted before generation begins and refunded if the
+        job fails.
+      operationId: recreateGroupPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PhotoRecreateGroupRequest" }
+            examples:
+              basic:
+                summary: Three-person group photo
+                value:
+                  reference_image_url: "https://example.com/group-scene.jpg"
+                  profile_ids: [42, 43, 44]
+                  aspect_ratio: "16:9"
+      responses:
+        "200":
+          description: Group photo generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/GroupGenerationResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Fewer than 2 valid ready profiles found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 404
+                error: { type: trained_profile_not_found, code: 40403, message: "Trained profile not found." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+
+  /api/v2/photo/profiles:
+    get:
+      tags: [Photo]
+      summary: List trained profiles
+      description: >
+        Returns all ready trained profiles for the authenticated user, ordered
+        newest first. Only profiles with `status: ready` are included.
+      operationId: listPhotoProfiles
+      responses:
+        "200":
+          description: Profiles returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data:
+                    type: object
+                    properties:
+                      profiles:
+                        type: array
+                        items: { $ref: "#/components/schemas/PhotoProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /api/v2/image/group-photo:
+    post:
+      tags: [Image]
+      summary: Swap faces into a group scene
+      description: >
+        Inserts 2–20 people from input images into a reference group scene.
+        The scene prompt is auto-generated from the reference image; an
+        optional `prompt` field overrides it entirely.
+
+
+        The call blocks until generation completes. Credits are deducted
+        before generation begins and refunded if the job fails.
+      operationId: createGroupPhoto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GroupPhotoRequest" }
+            examples:
+              basic:
+                summary: Two-person group swap
+                value:
+                  input_image_urls:
+                    - "https://example.com/person1.jpg"
+                    - "https://example.com/person2.jpg"
+                  reference_image_url: "https://example.com/office-scene.jpg"
+                  genders: ["male", "female"]
+                  aspect_ratio: "16:9"
+      responses:
+        "200":
+          description: Group photo generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/GenerationResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+
+  /api/v2/image-to-prompt:
+    post:
+      tags: [Image]
+      summary: Analyze an image and generate a text prompt
+      description: >
+        Analyzes an image and returns a descriptive text prompt suitable for
+        use in generation endpoints.
+
+
+        Two modes are supported:
+
+        - `standalone`: produces a single `<image1>` reference tag prompt.
+
+        - `reference`: produces per-person `<imageN>` tags using gender and
+          count hints, suitable for multi-person scene prompts.
+
+
+        No credits are deducted; this is a utility endpoint.
+      operationId: imageToPrompt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImageToPromptRequest" }
+            examples:
+              standalone:
+                summary: Standalone mode
+                value:
+                  image_url: "https://example.com/landscape.jpg"
+                  prompt_mode: "standalone"
+              reference:
+                summary: Reference mode (multi-person)
+                value:
+                  image_url: "https://example.com/group-photo.jpg"
+                  prompt_mode: "reference"
+                  reference_info:
+                    num_persons: 2
+                    genders: ["male", "female"]
+      responses:
+        "200":
+          description: Prompt generated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  prompt:
+                    type: string
+                    description: Generated text prompt describing the image.
+                    example: >-
+                      Two professionals, <image1> male and <image2> female,
+                      standing in a modern glass office lobby with city views
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+        "502": { $ref: "#/components/responses/BadGateway" }
+
+  /api/v2/media/upload:
+    post:
+      tags: [Media]
+      summary: Upload media files to CDN
+      description: >
+        Uploads one or more media files to the GoStudio CDN. Accepts HTTPS
+        URLs, data URIs (`data:image/png;base64,...`), raw base64 strings
+        (requires `mime_type`), or binary multipart uploads.
+
+
+        Returns a result per item. The overall request returns `200` even if
+        some items fail — check `summary.failed` and the per-item `error`
+        field. Returns `422` only when **every** item in the batch is
+        NSFW-flagged. Accepts up to 20 items per request.
+      operationId: uploadMedia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadRequest" }
+            examples:
+              url:
+                summary: Upload by HTTPS URL
+                value:
+                  urls: ["https://example.com/photo.jpg"]
+                  nsfw_check: true
+                  purpose: "group-photo-input"
+              data_uri:
+                summary: Upload via data URI
+                value:
+                  urls: ["data:image/png;base64,iVBORw0KGgo..."]
+                  mime_type: "image/png"
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                nsfw_check:
+                  type: string
+                  description: Run NSFW classifier. `"true"` (default) or `"false"`.
+                  example: "true"
+                purpose:
+                  type: string
+                  description: Label for the upload batch.
+      responses:
+        "200":
+          description: >
+            Upload processed. Check `summary.failed` and per-item `error`
+            fields for partial failures.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  results:
+                    type: array
+                    items: { $ref: "#/components/schemas/UploadResult" }
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        description: Total items submitted.
+                        example: 2
+                      uploaded:
+                        type: integer
+                        description: Successfully uploaded items.
+                        example: 2
+                      failed:
+                        type: integer
+                        description: Failed items.
+                        example: 0
+                      nsfw_flagged:
+                        type: integer
+                        description: NSFW-flagged items.
+                        example: 0
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "415":
+          description: One or more files have an unsupported media type.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 415
+                error: { type: invalid_file_type, code: 41500, message: "Unsupported file type." }
+        "422":
+          description: Every item in the batch was flagged as NSFW.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 422
+                error: { type: nsfw_content, code: 42293, message: "All uploaded images were flagged as NSFW." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /api/v2/apps/age-modifier:
+    post:
+      tags: [Apps]
+      summary: Modify a person's apparent age in a photo
+      description: >
+        Modifies the apparent age of a person in a photo to the specified
+        `target_age`. The model is chosen automatically based on `target_age`
+        and `age_mode`.
+
+
+        The call blocks until processing completes (up to ~4 minutes) and
+        returns the finished image URLs directly. Credits are deducted before
+        generation begins and refunded if the job fails.
+
+
+        If `webhook_url` is provided, the result is also POSTed to that URL
+        after generation completes (fire-and-forget, no retries). Must be HTTPS.
+      operationId: runAgeModifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgeModifierRequest" }
+            examples:
+              basic:
+                summary: Age to 65
+                value:
+                  image_url: "https://example.com/portrait.jpg"
+                  target_age: 65
+                  gender: "female"
+              with_webhook:
+                summary: With webhook
+                value:
+                  image_url: "https://example.com/portrait.jpg"
+                  target_age: 10
+                  gender: "male"
+                  webhook_url: "https://myapp.example.com/webhooks/age-modifier"
+      responses:
+        "200":
+          description: Age modification completed successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/AgeModifierJobResult" }
+        "400":
+          description: Missing or invalid request fields.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              examples:
+                missing_field:
+                  summary: Missing required field
+                  value:
+                    status: 400
+                    error: { type: missing_required_field, code: 40011, message: "image_url is required." }
+                invalid_url:
+                  summary: Invalid image URL
+                  value:
+                    status: 400
+                    error: { type: invalid_input, code: 40012, message: "image_url must be a valid HTTPS URL." }
+                invalid_webhook:
+                  summary: Invalid webhook URL
+                  value:
+                    status: 400
+                    error: { type: invalid_input, code: 40012, message: "webhook_url must be HTTPS." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { $ref: "#/components/responses/PaymentRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
+  /api/v2/apps/age-modifier/{jobId}:
+    get:
+      tags: [Apps]
+      summary: Poll age-modifier job status
+      description: >
+        Returns the current status of an age-modifier job by its ID.
+        `output_urls` and `credits_deducted` appear only when `status` is
+        `completed`; `error` appears only when `status` is `failed`.
+
+
+        Since `POST /api/v2/apps/age-modifier` already waits for the result,
+        use this endpoint to re-fetch outputs of an earlier job, or to check
+        on one whose connection dropped.
+      operationId: getAgeModifierJob
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          description: Positive integer job ID returned by POST /api/v2/apps/age-modifier.
+          schema: { type: integer, example: 12345 }
+      responses:
+        "200":
+          description: Job status returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: integer, example: 200 }
+                  data: { $ref: "#/components/schemas/AgeModifierJobResult" }
+        "400":
+          description: jobId is not a positive integer.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 400
+                error: { type: invalid_input, code: 40012, message: "jobId must be a positive integer." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404":
+          description: Job not found or not owned by the authenticated user.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+              example:
+                status: 404
+                error: { type: job_not_found, code: 40404, message: "Job not found." }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
 components:
   securitySchemes:
@@ -642,29 +1126,6 @@ components:
             `GET /api/v2/apps/watermark-remover/{jobId}`.
           example: https://your-app.com/webhooks/gostudio
 
-    WatermarkGenerateRequest:
-      allOf:
-        - $ref: "#/components/schemas/WatermarkRequest"
-        - type: object
-          properties:
-            webhook_url:
-              type: string
-              format: uri
-              description: >
-                Behaves differently here than on
-                `POST /api/v2/apps/watermark-remover`. This URL is registered
-                directly with the upstream model provider as its own callback,
-                so what your server receives is the provider's raw,
-                provider-specific body (Replicate / Astria / Fal) with
-                provider-hosted output URLs — not the GoStudio result payload,
-                and not GoStudio CDN URLs. It is also ignored entirely by
-                synchronous models, including the default
-                `dewatermark/watermark-remover-pro` (`lite`), which return their
-                output in the `200` response and never call back at all. Use
-                `POST /api/v2/apps/watermark-remover` if you want the documented
-                result payload delivered to your endpoint.
-              example: https://your-app.com/webhooks/gostudio
-
     WatermarkSyncResult:
       type: object
       properties:
@@ -828,3 +1289,421 @@ components:
           properties:
             still_working_copy_at_ms: { type: integer }
             cancel_retry_button_at_ms: { type: integer }
+
+    GenerationResult:
+      type: object
+      properties:
+        kind:
+          type: string
+          description: Always "generation".
+          example: generation
+        job_id:
+          type: string
+          description: >
+            Encoded job identifier. Use with
+            `GET /api/v2/apps/job/{job_id}` to poll status or re-fetch results.
+          example: enc_abc123
+        credits_deducted:
+          type: integer
+          description: Credits spent on this generation.
+          example: 10
+        credit_balance:
+          type: integer
+          description: Remaining credit balance after this request.
+          example: 490
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the job was created.
+        output_urls:
+          type: array
+          description: CDN URLs for the generated images.
+          items: { type: string, format: uri }
+
+    GroupGenerationResult:
+      allOf:
+        - $ref: "#/components/schemas/GenerationResult"
+        - type: object
+          properties:
+            profile_ids:
+              type: array
+              description: Profile IDs used in the generation.
+              items: { type: integer }
+              example: [42, 43, 44]
+
+    PhotoProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Profile ID.
+          example: 42
+        name:
+          type: string
+          description: Profile display name.
+          example: Alex Johnson
+        gender:
+          type: string
+          enum: [male, female, other]
+          description: Profile gender.
+        cover_url:
+          type: string
+          format: uri
+          description: Cover image URL.
+          example: "https://cdn.gostudio.ai/profiles/cover/42.jpg"
+        status:
+          type: string
+          description: Always "ready" for profiles returned by this endpoint.
+          example: ready
+        created_at:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the profile was created.
+
+    PhotoGenerateRequest:
+      type: object
+      required: [prompt]
+      properties:
+        prompt:
+          type: string
+          description: Text prompt for generation.
+          minLength: 1
+          example: "A professional headshot in a modern office"
+        profile_ids:
+          type: array
+          description: IDs of trained profiles to lock identity to.
+          items: { type: integer }
+          default: []
+          example: [42]
+        num_output_images:
+          type: integer
+          description: Number of images to generate.
+          default: 1
+          minimum: 1
+          maximum: 4
+        aspect_ratio:
+          type: string
+          description: Output aspect ratio.
+          enum: ["1:1", "3:4", "4:3", "9:16", "16:9"]
+          default: "3:4"
+        resolution:
+          type: string
+          description: Output resolution.
+          enum: ["1K", "2K", "4K"]
+          default: "1K"
+        output_format:
+          type: string
+          description: Output image format.
+          enum: [png, jpg]
+          default: png
+
+    PhotoRecreateRequest:
+      type: object
+      required: [input_image_url, reference_image_url]
+      properties:
+        input_image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the image to recreate.
+          example: "https://example.com/photo.jpg"
+        reference_image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the reference style or scene image.
+          example: "https://example.com/reference.jpg"
+        instructions:
+          type: string
+          description: Additional instructions for the recreation.
+          example: "Make it look more professional"
+        profile_ids:
+          type: array
+          description: IDs of trained profiles for identity lock.
+          items: { type: integer }
+          default: []
+        num_output_images:
+          type: integer
+          description: Number of images to generate.
+          default: 1
+          minimum: 1
+          maximum: 4
+        output_format:
+          type: string
+          description: Output image format.
+          enum: [png, jpg]
+          default: png
+
+    PhotoRecreateGroupRequest:
+      type: object
+      required: [reference_image_url, profile_ids]
+      properties:
+        reference_image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the reference group scene image.
+          example: "https://example.com/group-scene.jpg"
+        profile_ids:
+          type: array
+          description: IDs of trained profiles for group members. Minimum 2, maximum 10.
+          items: { type: integer }
+          minItems: 2
+          maxItems: 10
+          example: [42, 43, 44]
+        num_output_images:
+          type: integer
+          description: Number of images to generate.
+          default: 1
+          minimum: 1
+          maximum: 4
+        aspect_ratio:
+          type: string
+          description: Output aspect ratio. Auto-detected from the reference image if omitted.
+          enum: ["1:1", "3:4", "4:3", "9:16", "16:9"]
+          example: "16:9"
+        resolution:
+          type: string
+          description: Output resolution.
+          enum: ["1K", "2K", "4K"]
+          default: "1K"
+        output_format:
+          type: string
+          description: Output image format.
+          enum: [png, jpg]
+          default: png
+        instructions:
+          type: string
+          description: Additional generation instructions.
+
+    GroupPhotoRequest:
+      type: object
+      required: [input_image_urls, reference_image_url]
+      properties:
+        input_image_urls:
+          type: array
+          description: HTTPS URLs of the source face images. 2–20 items.
+          items: { type: string, format: uri }
+          minItems: 2
+          maxItems: 20
+          example: ["https://example.com/person1.jpg", "https://example.com/person2.jpg"]
+        reference_image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the target scene or background image.
+          example: "https://example.com/office-scene.jpg"
+        genders:
+          type: array
+          description: Gender hint per input image, in order.
+          items:
+            type: string
+            enum: [male, female, pets, others]
+          example: ["male", "female"]
+        instructions:
+          type: string
+          description: Additional instructions for the scene composition.
+        prompt:
+          type: string
+          description: Override the auto-generated scene prompt.
+        num_output_images:
+          type: integer
+          description: Number of output images.
+          default: 1
+          minimum: 1
+          maximum: 4
+        aspect_ratio:
+          type: string
+          description: Output aspect ratio. Auto-detected from the reference image if omitted.
+          enum: [auto, "1:1", "3:4", "4:3", "9:16", "16:9"]
+        resolution:
+          type: string
+          description: Output resolution.
+          enum: [low, medium, high]
+          default: low
+        output_format:
+          type: string
+          description: Output image format.
+          enum: [png, jpg]
+          default: png
+
+    ImageToPromptRequest:
+      type: object
+      required: [image_url, prompt_mode]
+      properties:
+        image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the image to analyze.
+          example: "https://example.com/photo.jpg"
+        prompt_mode:
+          type: string
+          description: >
+            Analysis mode. `standalone` produces a single `<image1>` reference
+            tag. `reference` produces per-person `<imageN>` tags using gender
+            and count hints.
+          enum: [standalone, reference]
+        reference_info:
+          type: object
+          description: Required when `prompt_mode` is `reference`.
+          properties:
+            num_persons:
+              type: integer
+              description: Number of people in the scene.
+              minimum: 1
+              example: 2
+            genders:
+              type: array
+              description: >
+                Gender per person. Length must equal `num_persons`.
+                Use `null` for unknown.
+              items:
+                type: string
+                enum: [male, female, pets, others]
+                nullable: true
+              example: ["male", "female"]
+
+    UploadRequest:
+      type: object
+      required: [urls]
+      properties:
+        urls:
+          type: array
+          description: >
+            Items to upload. Each can be an HTTPS URL, a data URI
+            (`data:mime;base64,...`), or a raw base64 string (requires
+            `mime_type`). Maximum 20 items.
+          items: { type: string }
+          minItems: 1
+          maxItems: 20
+          example: ["https://example.com/photo.jpg"]
+        nsfw_check:
+          type: boolean
+          description: Run NSFW classifier on images.
+          default: true
+        purpose:
+          type: string
+          description: Label for the upload batch.
+          example: group-photo-input
+        tool:
+          type: string
+          description: Tool name that triggered this upload.
+          example: group-photo
+        mime_type:
+          type: string
+          description: MIME type hint, required when `urls` contains raw base64 strings.
+          example: image/png
+
+    UploadResult:
+      type: object
+      properties:
+        source_url:
+          type: string
+          description: The original URL or identifier submitted.
+        cdn_url:
+          type: string
+          format: uri
+          nullable: true
+          description: GoStudio CDN URL for the uploaded file.
+        raw_url:
+          type: string
+          format: uri
+          nullable: true
+          description: Raw storage URL for the uploaded file.
+        media_type:
+          type: string
+          enum: [image, video, audio, document]
+          nullable: true
+          description: Detected media type.
+        content_type:
+          type: string
+          nullable: true
+          description: MIME type of the uploaded file.
+        nsfw_checked:
+          type: boolean
+          description: Whether the NSFW classifier ran on this item.
+        nsfw_flagged:
+          type: boolean
+          description: Whether this item was flagged as NSFW.
+        error:
+          type: string
+          nullable: true
+          description: Error code if this item failed. Present only on failure.
+        message:
+          type: string
+          nullable: true
+          description: Error detail. Present only on failure.
+
+    AgeModifierRequest:
+      type: object
+      required: [image_url]
+      properties:
+        image_url:
+          type: string
+          format: uri
+          description: HTTPS URL of the input photo. Also accepted as `input_image_url`.
+          example: "https://example.com/portrait.jpg"
+        target_age:
+          type: integer
+          description: Desired apparent age in years.
+          default: 30
+          minimum: 1
+          maximum: 100
+          example: 65
+        gender:
+          type: string
+          description: Subject gender hint.
+          enum: [none, male, female, other]
+          default: none
+        age_mode:
+          type: string
+          description: >
+            Age modification strategy. The model is chosen automatically
+            based on this field and `target_age`.
+          enum: [selected_age, age_progression]
+          default: selected_age
+        webhook_url:
+          type: string
+          format: uri
+          description: >
+            HTTPS URL to receive the result after generation completes.
+            Delivery is fire-and-forget — sent once, never retried.
+          example: "https://myapp.example.com/webhooks/age-modifier"
+
+    AgeModifierJobResult:
+      type: object
+      properties:
+        job_id:
+          type: integer
+          description: Numeric job ID.
+          example: 12345
+        status:
+          type: string
+          enum: [processing, completed, failed]
+          description: >
+            Current state of the job. `output_urls` and `credits_deducted`
+            are present only when `completed`; `error` is present only when
+            `failed`.
+        output_urls:
+          type: array
+          description: CDN URLs for the generated images. Present when `status` is `completed`.
+          items: { type: string, format: uri }
+          nullable: true
+        credits_deducted:
+          type: integer
+          description: Credits spent. Present when `status` is `completed`.
+          nullable: true
+          example: 10
+        credit_balance:
+          type: integer
+          description: Remaining credit balance. Present when `status` is `completed`.
+          nullable: true
+          example: 490
+        error:
+          type: string
+          description: Failure reason. Present when `status` is `failed`.
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: When the job was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the job was last updated.
