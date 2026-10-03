@@ -1,0 +1,233 @@
+---
+title: "Image to Prompt"
+description: "Analyze any image and get a ready-to-use generation prompt in seconds."
+---
+
+The Image to Prompt API analyzes a photo and returns a detailed, accurate text prompt that describes it. Use it to understand an image's composition and style, or to generate a prompt you can feed directly into the [Photo Generation](/api-reference/endpoint/generatePhoto) and [Group Photo](/api-reference/endpoint/createGroupPhoto) endpoints.
+
+The call is **synchronous** and returns immediately. No credits are deducted — this is a free utility endpoint.
+
+<Note>
+  Rate limit: 10 requests per minute per account.
+</Note>
+
+## Two modes
+
+### Standalone mode
+
+Analyzes a single image and returns a prompt with a `<image1>` reference tag. Best for landscapes, scenes, portraits, and any image with one subject.
+
+```json
+{
+  "image_url": "https://example.com/landscape.jpg",
+  "prompt_mode": "standalone"
+}
+```
+
+**Returns:**
+```
+A serene mountain valley at golden hour, <image1>, snow-capped peaks in the background, warm amber light, ultra-detailed photography
+```
+
+### Reference mode
+
+Analyzes a group scene and injects per-person `<imageN>` placeholders based on the number of people and their genders. Use this when you want to take a group photo scene and drop your own subjects into it — the output prompt is ready to pass to the Group Photo or Recreate Group endpoints.
+
+```json
+{
+  "image_url": "https://example.com/team-photo.jpg",
+  "prompt_mode": "reference",
+  "reference_info": {
+    "num_persons": 3,
+    "genders": ["male", "female", "male"]
+  }
+}
+```
+
+**Returns:**
+```
+Three colleagues, <image1> male, <image2> female, and <image3> male, standing in a bright modern office lobby, professional attire, natural lighting
+```
+
+---
+
+## Step 1 — Analyze the image
+
+<CodeGroup>
+```bash curl
+curl -X POST https://www.gostudio.ai/api/v2/image-to-prompt \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/photo.jpg",
+    "prompt_mode": "standalone"
+  }'
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/image-to-prompt", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    image_url: "https://example.com/photo.jpg",
+    prompt_mode: "standalone"
+  })
+});
+
+const { prompt } = await res.json();
+console.log(prompt);
+```
+
+```python Python
+import httpx
+
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/image-to-prompt",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "image_url": "https://example.com/photo.jpg",
+        "prompt_mode": "standalone",
+    },
+)
+
+print(r.json()["prompt"])
+```
+</CodeGroup>
+
+### Request fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `image_url` | string | Yes | Publicly reachable HTTPS URL of the image to analyze. |
+| `prompt_mode` | string | Yes | `"standalone"` for single-subject images. `"reference"` for multi-person group scenes. |
+| `reference_info` | object | Conditional | Required when `prompt_mode` is `"reference"`. |
+| `reference_info.num_persons` | integer | Yes | Number of people in the scene. |
+| `reference_info.genders` | array | Yes | Gender per person in order: `"male"`, `"female"`, `"pets"`, `"others"`. Length must equal `num_persons`. |
+
+## Step 2 — Read the response
+
+```json
+{
+  "status": 200,
+  "prompt": "Two professionals, <image1> male and <image2> female, standing in a modern glass office lobby with city views in the background, natural lighting, business casual attire"
+}
+```
+
+The `prompt` field is a ready-to-use string. Pass it directly to any generation endpoint.
+
+## Step 3 — Use the prompt in a generation
+
+The returned prompt is designed to drop straight into a generation call. Here is a complete flow — analyze a reference scene, then generate a group photo using the returned prompt:
+
+<CodeGroup>
+```bash curl
+# Step 1: Get the prompt
+PROMPT=$(curl -s -X POST https://www.gostudio.ai/api/v2/image-to-prompt \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/office-scene.jpg",
+    "prompt_mode": "reference",
+    "reference_info": { "num_persons": 2, "genders": ["male", "female"] }
+  }' | jq -r '.prompt')
+
+# Step 2: Generate with that prompt
+curl -X POST https://www.gostudio.ai/api/v2/image/group-photo \
+  --max-time 300 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"input_image_urls\": [
+      \"https://example.com/person1.jpg\",
+      \"https://example.com/person2.jpg\"
+    ],
+    \"reference_image_url\": \"https://example.com/office-scene.jpg\",
+    \"prompt\": \"$PROMPT\"
+  }"
+```
+
+```javascript Node.js
+// Step 1: Get the prompt
+const promptRes = await fetch("https://www.gostudio.ai/api/v2/image-to-prompt", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    image_url: "https://example.com/office-scene.jpg",
+    prompt_mode: "reference",
+    reference_info: { num_persons: 2, genders: ["male", "female"] }
+  })
+});
+const { prompt } = await promptRes.json();
+
+// Step 2: Generate with that prompt
+const genRes = await fetch("https://www.gostudio.ai/api/v2/image/group-photo", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    input_image_urls: [
+      "https://example.com/person1.jpg",
+      "https://example.com/person2.jpg"
+    ],
+    reference_image_url: "https://example.com/office-scene.jpg",
+    prompt
+  }),
+  signal: AbortSignal.timeout(300_000)
+});
+
+const { data } = await genRes.json();
+console.log(data.output_urls[0]);
+```
+
+```python Python
+import httpx
+
+# Step 1: Get the prompt
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/image-to-prompt",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "image_url": "https://example.com/office-scene.jpg",
+        "prompt_mode": "reference",
+        "reference_info": {"num_persons": 2, "genders": ["male", "female"]},
+    },
+)
+prompt = r.json()["prompt"]
+
+# Step 2: Generate with that prompt
+gen = httpx.post(
+    "https://www.gostudio.ai/api/v2/image/group-photo",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "input_image_urls": [
+            "https://example.com/person1.jpg",
+            "https://example.com/person2.jpg",
+        ],
+        "reference_image_url": "https://example.com/office-scene.jpg",
+        "prompt": prompt,
+    },
+    timeout=300.0,
+)
+print(gen.json()["data"]["output_urls"][0])
+```
+</CodeGroup>
+
+## Common issues
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `400 invalid_input` | Missing required field or invalid URL | Check that `image_url` is a valid HTTPS address and `prompt_mode` is set. |
+| `400 missing_required_field` | `reference_info` absent in `"reference"` mode | Include `reference_info` with `num_persons` and `genders` when using `reference` mode. |
+| `401 unauthorized` | Token expired | Fetch a fresh token — see [Authentication](/authentication). |
+| `429 rate_limited` | More than 10 requests per minute | Slow down and retry after a short pause. |
+| `502 external_service_failed` | Vision model temporarily unavailable | Retry the request. |
+
+See [Errors](/errors) for the full code reference.
