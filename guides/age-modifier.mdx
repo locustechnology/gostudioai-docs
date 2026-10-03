@@ -1,0 +1,162 @@
+---
+title: "Age Modifier"
+description: "Modify a person's apparent age in a photo using AI."
+---
+
+The Age Modifier API changes the apparent age of a person in a photo to your specified `target_age`. The model is chosen automatically based on the age and modification mode you provide — no model selection required.
+
+The call is **synchronous** — it blocks until processing completes and returns the finished image URLs directly.
+
+<Warning>
+  Processing can take up to **four minutes**. Most HTTP clients default to a 30-second timeout — raise yours to at least 300 seconds before calling this endpoint.
+</Warning>
+
+## Before you start
+
+- A valid **Bearer token**. See [Authentication](/authentication).
+- Enough **credits**. Failed generations are refunded automatically.
+- A **publicly reachable image URL**. The API fetches the image server-side — it cannot be behind a login, a signed-URL expiry, or a firewall.
+
+## Step 1 — Submit the request
+
+<CodeGroup>
+```bash curl
+curl -X POST https://www.gostudio.ai/api/v2/apps/age-modifier \
+  --max-time 300 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image_url": "https://example.com/portrait.jpg",
+    "target_age": 65,
+    "gender": "female"
+  }'
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/apps/age-modifier", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    image_url: "https://example.com/portrait.jpg",
+    target_age: 65,
+    gender: "female"
+  }),
+  signal: AbortSignal.timeout(300_000)
+});
+
+const { data } = await res.json();
+console.log(data.output_urls[0]);
+```
+
+```python Python
+import httpx
+
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/apps/age-modifier",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "image_url": "https://example.com/portrait.jpg",
+        "target_age": 65,
+        "gender": "female",
+    },
+    timeout=300.0,
+)
+
+print(r.json()["data"]["output_urls"][0])
+```
+</CodeGroup>
+
+### Request fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `image_url` | string | Yes | Publicly reachable HTTPS URL of the input photo. Also accepted as `input_image_url`. |
+| `target_age` | integer | No | Desired apparent age in years. Default `30`, range `1–100`. |
+| `gender` | string | No | Subject gender hint: `"none"` (default), `"male"`, `"female"`, `"other"`. |
+| `age_mode` | string | No | `"selected_age"` (default) — ages to `target_age`. `"age_progression"` — natural progression effect. |
+| `webhook_url` | string | No | HTTPS URL to receive a copy of the result. See Step 3. |
+
+<Note>
+  The model is selected automatically based on `target_age` and `age_mode`. You do not need to specify a model.
+</Note>
+
+## Step 2 — Read the response
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": 12345,
+    "status": "completed",
+    "output_urls": ["https://cdn.gostudio.ai/output/portrait-aged.png"],
+    "credits_deducted": 10,
+    "credit_balance": 490
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `job_id` | integer | Numeric job ID. Keep it to re-fetch the result with Step 4. |
+| `status` | string | Always `"completed"` on a `200`. |
+| `output_urls` | string[] | CDN URLs for the age-modified images, ready to use immediately. |
+| `credits_deducted` | integer | Credits consumed by this request. |
+| `credit_balance` | integer | Your remaining balance afterwards. |
+
+Credits are reserved when the job is accepted and **refunded automatically** if the generation fails.
+
+## Step 3 — Optional: receive results by webhook
+
+Pass a `webhook_url` to have the result delivered to your server after generation completes, in addition to the synchronous response.
+
+```json
+{
+  "image_url": "https://example.com/portrait.jpg",
+  "target_age": 10,
+  "gender": "male",
+  "webhook_url": "https://myapp.example.com/webhooks/age-modifier"
+}
+```
+
+The delivered payload is the same `data` object shown in Step 2. Delivery is fire-and-forget — sent once, never retried. The URL must be HTTPS.
+
+## Step 4 — Look up an earlier job
+
+Use this to re-fetch the result of a past job, or if the connection dropped during generation:
+
+```bash
+curl https://www.gostudio.ai/api/v2/apps/age-modifier/12345 \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+```json
+{
+  "status": 200,
+  "data": {
+    "job_id": 12345,
+    "status": "completed",
+    "output_urls": ["https://cdn.gostudio.ai/output/portrait-aged.png"],
+    "credits_deducted": 10,
+    "created_at": "2026-10-03T10:00:00Z",
+    "updated_at": "2026-10-03T10:02:00Z"
+  }
+}
+```
+
+`output_urls` and `credits_deducted` appear only once `status` is `completed`. When it is `failed`, you get an `error` field instead.
+
+## Common issues
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Client timeout, no response | Default HTTP timeout too short | Raise it to 300s. Look up the result with `GET /api/v2/apps/age-modifier/{jobId}`. |
+| `400 missing_required_field` | `image_url` absent from the request body | Include a valid HTTPS image URL. |
+| `400 invalid_input` | Invalid image or webhook URL | Ensure the URL is a valid, publicly reachable HTTPS address. |
+| `401 unauthorized` | Token expired | Fetch a fresh token — see [Authentication](/authentication). |
+| `402 insufficient_credits` | Balance too low | Purchase credits in your GoStudio account. |
+| `429 rate_limited` | Too many requests | Back off and retry. |
+
+See [Errors](/errors) for the full code reference.

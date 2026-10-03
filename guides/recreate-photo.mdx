@@ -1,0 +1,134 @@
+---
+title: "Recreate Photo"
+description: "Recreate a photo using a reference image, with optional profile identity locking."
+---
+
+The Recreate Photo API transforms an input photo by applying the style or scene from a reference image. You provide two image URLs — the source to recreate and the reference to draw from — and the API returns one or more recreated images.
+
+The call is **synchronous** — one request, one finished result. There is no job queue to manage.
+
+<Warning>
+  The API holds the connection until the job completes. Depending on complexity, this can take up to **four minutes**. Most HTTP clients default to a 30-second timeout — raise yours to at least 300 seconds before calling this endpoint.
+</Warning>
+
+## Before you start
+
+- A valid **Bearer token**. See [Authentication](/authentication).
+- Enough **credits**. The request is rejected up front with `402 insufficient_credits` if your balance is too low. Failed generations are refunded automatically.
+- Two **publicly reachable image URLs** — one for the input photo and one for the reference. The API fetches them server-side, so neither can be behind a login, a signed-URL expiry, or a firewall.
+
+## Step 1 — Submit the recreation
+
+<CodeGroup>
+```bash curl
+curl -X POST https://www.gostudio.ai/api/v2/photo/recreate \
+  --max-time 300 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input_image_url": "https://example.com/photo.jpg",
+    "reference_image_url": "https://example.com/reference.jpg"
+  }'
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/photo/recreate", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    input_image_url: "https://example.com/photo.jpg",
+    reference_image_url: "https://example.com/reference.jpg"
+  }),
+  signal: AbortSignal.timeout(300_000)
+});
+
+const { data } = await res.json();
+console.log(data.output_urls[0]);
+```
+
+```python Python
+import httpx
+
+r = httpx.post(
+    "https://www.gostudio.ai/api/v2/photo/recreate",
+    headers={"Authorization": "Bearer YOUR_TOKEN"},
+    json={
+        "input_image_url": "https://example.com/photo.jpg",
+        "reference_image_url": "https://example.com/reference.jpg",
+    },
+    timeout=300.0,
+)
+
+print(r.json()["data"]["output_urls"][0])
+```
+</CodeGroup>
+
+### Request fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `input_image_url` | string | Yes | Publicly reachable HTTPS URL of the photo to recreate. |
+| `reference_image_url` | string | Yes | Publicly reachable HTTPS URL of the reference style or scene. |
+| `instructions` | string | No | Extra guidance for the recreation (e.g. `"Make it look more professional"`). |
+| `profile_ids` | integer[] | No | IDs of trained profiles to lock identity to. See Step 3. |
+| `num_output_images` | integer | No | Number of images to generate. Default `1`, max `4`. |
+| `output_format` | string | No | `"png"` (default) or `"jpg"`. |
+
+## Step 2 — Read the response
+
+```json
+{
+  "status": 200,
+  "data": {
+    "kind": "generation",
+    "job_id": "enc_def456",
+    "credits_deducted": 10,
+    "credit_balance": 490,
+    "created_at": "2026-10-03T10:00:00Z",
+    "output_urls": ["https://cdn.gostudio.ai/output/def.png"]
+  }
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `job_id` | string | Encoded job ID. Keep it to re-fetch results later with [Job Status](/guides/job-status). |
+| `output_urls` | string[] | CDN URLs for the recreated images, ready to use immediately. |
+| `credits_deducted` | integer | Credits consumed by this request. |
+| `credit_balance` | integer | Your remaining balance afterwards. |
+
+Credits are reserved when the job is accepted and **refunded automatically** if the generation fails.
+
+## Step 3 — Lock to a trained profile (optional)
+
+Pass one or more profile IDs in `profile_ids` to preserve a person's identity in the recreated image.
+
+```json
+{
+  "input_image_url": "https://example.com/photo.jpg",
+  "reference_image_url": "https://example.com/reference.jpg",
+  "profile_ids": [42],
+  "instructions": "Keep the lighting natural"
+}
+```
+
+<Note>
+  Use `GET /api/v2/photo/profiles` to retrieve the IDs of your trained profiles. Profiles must have `status: ready`. Any invalid or inactive profiles are silently filtered — if all provided profiles are invalid, the request returns `404 trained_profile_not_found`.
+</Note>
+
+## Common issues
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Client timeout, no response | Default HTTP timeout too short | Raise it to 300s. Look up the result with [Job Status](/guides/job-status). |
+| `400 invalid_input` | Missing or malformed image URL | Ensure both URLs are valid HTTPS addresses with no authentication or expiry. |
+| `401 unauthorized` | Token expired | Fetch a fresh token — see [Authentication](/authentication). |
+| `402 insufficient_credits` | Balance too low | Purchase credits in your GoStudio account. |
+| `404 trained_profile_not_found` | All provided profile IDs are invalid or inactive | Verify IDs with `GET /api/v2/photo/profiles`. |
+| `409 trained_profile_not_ready` | Profile exists but training is not complete | Wait for the profile to reach `status: ready`. |
+| `429 rate_limited` | Too many requests | Back off and retry. |
+
+See [Errors](/errors) for the full code reference.
