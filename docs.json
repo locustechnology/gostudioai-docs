@@ -45,6 +45,7 @@
               "guides/recreate-photo",
               "guides/group-photo",
               "guides/age-modifier",
+              "guides/image-to-prompt",
               "guides/job-status"
             ]
           }

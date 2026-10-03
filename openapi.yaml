@@ -194,96 +194,6 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
 
-  /api/v2/apps/watermark-remover/record:
-    post:
-      tags: [Watermark Remover]
-      summary: Record a generation result
-      description: >
-        Finalizes an existing generation log — stores the output URLs and marks
-        the job completed, or marks it failed and refunds the credits that were
-        reserved for it at submit time. Credits are deducted when the generation
-        is submitted, not here; `credits_deducted` echoes the amount already
-        charged. A job can only be finalized once; a second call returns
-        `400 invalid_job_status`. If the log carries a `webhook_url` in its
-        metadata, or you pass one here, the result is delivered to it.
-
-
-        Allowed callers: `user`. An internal service token passes the auth gate
-        but carries no user context, so the job lookup returns `404`.
-      operationId: recordWatermarkResult
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [generation_log_id, status]
-              properties:
-                generation_log_id:
-                  type: integer
-                  description: The log to finalize. Must belong to the caller.
-                  example: 12345
-                status:
-                  type: string
-                  enum: [completed, failed]
-                output_urls:
-                  type: array
-                  description: Required when `status` is `completed`; must be non-empty.
-                  items: { type: string, format: uri }
-                error:
-                  type: string
-                  description: Failure reason, used when `status` is `failed`.
-                webhook_url:
-                  type: string
-                  format: uri
-                  description: HTTPS URL to deliver the result to. Overrides the log's stored webhook.
-            examples:
-              completed:
-                summary: Mark completed
-                value:
-                  generation_log_id: 12345
-                  status: completed
-                  output_urls: ["https://r2.gostudio.ai/g/k7p2qm9x/i/p4w7t1.jpg"]
-              failed:
-                summary: Mark failed
-                value:
-                  generation_log_id: 12345
-                  status: failed
-                  error: Provider returned no output.
-      responses:
-        "200":
-          description: Result recorded successfully.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: integer, example: 200 }
-                  data: { $ref: "#/components/schemas/WatermarkRecordResult" }
-        "400":
-          description: >
-            Invalid body, unknown status, missing `output_urls` for a completed
-            job, or the job was already finalized.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ErrorResponse" }
-              example:
-                status: 400
-                error: { type: validation_error, code: invalid_job_status, dev: 40037, message: "This job has already been finalized." }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404":
-          description: Generation log not found, or not owned by the authenticated user.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/ErrorResponse" }
-              example:
-                status: 404
-                error: { type: not_found_error, code: generation_log_not_found, dev: 40405, message: "Generation log not found." }
-        "429": { $ref: "#/components/responses/RateLimited" }
-        "500": { $ref: "#/components/responses/ServerError" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
-
   /api/v2/apps/job/{job_id}:
     get:
       tags: [Job Status]
@@ -347,38 +257,6 @@ paths:
                 error: { type: not_found_error, code: job_not_found, dev: 40404, message: "Job not found." }
         "429": { $ref: "#/components/responses/RateLimited" }
         "500": { $ref: "#/components/responses/ServerError" }
-
-  /api/v2/apps/watermark-remover/webhook:
-    post:
-      tags: [Webhooks]
-      summary: Provider callback (internal)
-      description: >
-        Receives async completion callbacks from the upstream model providers
-        (Replicate, Astria, Fal). **Not for your application to call** — configure
-        `webhook_url` on a generation request to receive results instead.
-
-
-        This endpoint is unauthenticated by design and always answers `200` with
-        `{ "received": true }`, even for unparseable or unmatched payloads, so a
-        provider never enters a retry storm. It does not use the standard
-        response envelope.
-      operationId: watermarkProviderWebhook
-      security: []
-      requestBody:
-        required: true
-        description: Provider-specific payload. The shape varies by provider.
-        content:
-          application/json:
-            schema: { type: object, additionalProperties: true }
-      responses:
-        "200":
-          description: Acknowledged. Always returned, regardless of outcome.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  received: { type: boolean, example: true }
 
   /api/v2/photo/generate:
     post:
