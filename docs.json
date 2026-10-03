@@ -40,7 +40,13 @@
           },
           {
             "group": "Guides",
-            "pages": ["guides/watermark-remover", "guides/job-status"]
+            "pages": [
+              "guides/watermark-remover",
+              "guides/recreate-photo",
+              "guides/group-photo",
+              "guides/age-modifier",
+              "guides/job-status"
+            ]
           }
         ]
       },
