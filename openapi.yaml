@@ -1778,33 +1778,34 @@ components:
       properties:
         prompt:
           type: string
-          description: "Description of the image to create."
+          description: "Describe the image you want."
         aspect_ratio:
           type: string
           default: "auto"
-          description: "Shape of the output image. Use `auto` to let the model choose from the prompt (supported models only), or a value from the model's `aspect_ratios` in Image models."
+          description: "Shape of the image, for example `1:1` or `16:9`. Use `auto` to let the model choose from your prompt. The shapes available depend on the model. See [Image models](/api-reference/ai-image/image-models)."
         model_id:
           type: string
+          enum: ["gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2.1", "gpt-image-2", "nano-banana-pro", "pruna", "minimax-h3-image"]
           default: "gpt-image-2-6-sunburst"
-          description: "Image model to use. Available IDs and their options are listed in Image models."
+          description: "Model used for the image. Each model offers either quality levels or sizes. See [Image models](/api-reference/ai-image/image-models) for what each one offers and costs."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
           default: "1K"
-          description: "Output size, for models that offer sizes. Not accepted by models that use `quality`."
+          description: "Image size, for models that offer sizes. Models that offer quality levels don't use it. See [Image models](/api-reference/ai-image/image-models)."
         quality:
           type: string
           enum: ["low", "medium", "high", "xhigh", "max"]
-          description: "Output quality, for models that offer quality tiers. `xhigh` and `max` are available on GPT Image 2.6 models only. Not accepted by models that use `resolution`. Default: `medium` (`low` for `gpt-image-2`)."
+          description: "Image quality, for models that offer quality levels. `xhigh` and `max` are available on the GPT Image 2.6 models only. Models that offer sizes don't use it. Default: `medium` (`low` for `gpt-image-2`)."
         webhook_url:
           type: string
           format: uri
-          description: "Optional HTTPS URL that is notified when the job finishes."
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
         mode:
           type: string
           enum: ["sync", "async"]
           default: "sync"
-          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
+          description: "`sync` waits for the finished result (up to 270 seconds). `async` returns straight away and the job runs in the background. See [Asynchronous requests](/api-reference/async-requests)."
 
     ImageEditRequest:
       type: object
@@ -1812,40 +1813,42 @@ components:
       properties:
         prompt:
           type: string
-          description: "Description of the changes to make."
+          description: "Describe what to change."
         input_image_urls:
           type: array
           items:
             type: string
             format: uri
           minItems: 1
-          description: "Images to edit. Public `http` or `https` URLs, from 1 up to the model's `max_input_image_urls`."
+          maxItems: 10
+          description: "Photos to edit, from 1 to 10. `pruna` accepts 1 photo; all other models accept up to 10."
         aspect_ratio:
           type: string
           default: "auto"
-          description: "Shape of the output image. Use `auto` to keep the shape of the input image, or a value from the model's `aspect_ratios` in Image models."
+          description: "Shape of the result, for example `1:1` or `16:9`. Use `auto` to keep the shape of your photo. The shapes available depend on the model. See [Image models](/api-reference/ai-image/image-models)."
         model_id:
           type: string
+          enum: ["gpt-image-2-6-sunburst", "gpt-image-2-6-flare", "nano-banana-2.1", "gpt-image-2", "nano-banana-pro", "pruna", "minimax-h3-image"]
           default: "gpt-image-2-6-sunburst"
-          description: "Image model to use. Available IDs and their options are listed in Image models."
+          description: "Model used for the image. Each model offers either quality levels or sizes. See [Image models](/api-reference/ai-image/image-models) for what each one offers and costs."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
           default: "1K"
-          description: "Output size, for models that offer sizes. Not accepted by models that use `quality`."
+          description: "Image size, for models that offer sizes. Models that offer quality levels don't use it. See [Image models](/api-reference/ai-image/image-models)."
         quality:
           type: string
           enum: ["low", "medium", "high", "xhigh", "max"]
-          description: "Output quality, for models that offer quality tiers. `xhigh` and `max` are available on GPT Image 2.6 models only. Not accepted by models that use `resolution`. Default: `medium` (`low` for `gpt-image-2`)."
+          description: "Image quality, for models that offer quality levels. `xhigh` and `max` are available on the GPT Image 2.6 models only. Models that offer sizes don't use it. Default: `medium` (`low` for `gpt-image-2`)."
         webhook_url:
           type: string
           format: uri
-          description: "Optional HTTPS URL that is notified when the job finishes."
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
         mode:
           type: string
           enum: ["sync", "async"]
           default: "sync"
-          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
+          description: "`sync` waits for the finished result (up to 270 seconds). `async` returns straight away and the job runs in the background. See [Asynchronous requests](/api-reference/async-requests)."
 
     VideoCreateRequest:
       type: object
@@ -1853,94 +1856,153 @@ components:
       properties:
         prompt:
           type: string
-          description: "Description of the video."
+          description: "Describe the video: what happens, the camera movement and the mood."
         model_id:
           type: string
-          description: "Video model to use. Available IDs for each mode are listed in Video models. Defaults to the default model of the mode."
+          enum: ["seedance25", "seedance2", "seedance2-fast", "wan30", "wan30-prime", "kling-v4", "omni-flash-i2v-v1.2", "minimax-h3", "minimax-h3-lite", "minimax-h3-highspeed"]
+          default: "seedance2-fast"
+          description: "Model used for the video. Duration, resolution and sound options vary by model. See [Video models](/api-reference/ai-video/video-models)."
         aspect_ratio:
           type: string
-          description: "Shape of the video. Accepted values depend on the model; defaults to the model's default."
+          description: "Shape of the video, for example `16:9` or `9:16`. The shapes available depend on the model, and each model has its own default. See [Video models](/api-reference/ai-video/video-models)."
         duration:
           type: integer
-          description: "Length in seconds. Accepted values and the default depend on the model."
+          default: 5
+          description: "Length of the video in seconds. The range depends on the model, and the default is 5 seconds:\n- 4–30 seconds: `seedance25`\n- 4–15 seconds: `seedance2`, `seedance2-fast`, `minimax-h3-lite`, `minimax-h3-highspeed`\n- 2–10, 12, 15, 20, 25, 30 seconds: `wan30`, `wan30-prime`\n- 3–15, 20, 25, 30 seconds: `kling-v4`\n- 3–15 seconds: `omni-flash-i2v-v1.2`\n- 5–15 seconds: `minimax-h3`"
         resolution:
           type: string
-          description: "Output resolution. Accepted values depend on the model."
+          description: "Resolution of the video. The options depend on the model. Send the value exactly as shown:\n- 480p, 720p: `seedance25`\n- 480p, 720p, 1080p, 4k: `seedance2`, `seedance2-fast`\n- 480p, 720p, 1080p: `wan30`, `wan30-prime`\n- 720p, 1080p: `kling-v4`\n- 360p, 720p, 1080p, 4k: `omni-flash-i2v-v1.2`\n- 768P, 2K, 4K: `minimax-h3`\n- 480P, 768P: `minimax-h3-lite`\n\n`minimax-h3-highspeed` has one fixed resolution, so leave this out."
         audio:
           type: boolean
-          description: "Generate audio. Only for models with an audio option."
+          description: "Adds sound to the video. Only some models can do this: `seedance25`, `seedance2`, `seedance2-fast`, `wan30`, `wan30-prime`. Other models make silent videos and don't accept this setting."
         webhook_url:
           type: string
           format: uri
-          description: "Optional HTTPS URL that is notified when the job finishes."
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
         mode:
           type: string
           enum: ["async"]
           default: "async"
-          description: "Videos always run in the background. Only `async` is accepted."
+          description: "Videos are always made in the background, so only `async` is accepted. You can leave this out."
 
     VideoKeyframesRequest:
-      allOf:
-        - $ref: "#/components/schemas/VideoCreateRequest"
-        - type: object
-          required: [start_image_url]
-          properties:
-            start_image_url:
-              type: string
-              format: uri
-              description: "URL of the first frame."
-            end_image_url:
-              type: string
-              format: uri
-              description: "URL of the last frame. Required, optional or not accepted, depending on the model."
+      type: object
+      required: ["prompt", "start_image_url"]
+      properties:
+        prompt:
+          type: string
+          description: "Describe the video: what happens, the camera movement and the mood."
+        start_image_url:
+          type: string
+          format: uri
+          description: "Photo to use as the first frame of the video."
+        end_image_url:
+          type: string
+          format: uri
+          description: "Optional photo to use as the last frame, to control how the video ends. Not accepted by `seedance25`, `omni-flash-i2v-v1.2`."
+        model_id:
+          type: string
+          enum: ["seedance25", "seedance2", "seedance2-fast", "wan30", "wan30-prime", "kling-v4", "omni-flash-i2v-v1.2", "minimax-h3", "minimax-h3-lite", "minimax-h3-highspeed"]
+          default: "seedance2-fast"
+          description: "Model used for the video. Duration, resolution and sound options vary by model. See [Video models](/api-reference/ai-video/video-models)."
+        aspect_ratio:
+          type: string
+          description: "Shape of the video, for example `16:9` or `9:16`. The shapes available depend on the model, and each model has its own default. See [Video models](/api-reference/ai-video/video-models). `minimax-h3`, `minimax-h3-lite`, `minimax-h3-highspeed` follow the shape of your first frame, so leave this out for them."
+        duration:
+          type: integer
+          default: 5
+          description: "Length of the video in seconds. The range depends on the model, and the default is 5 seconds:\n- 4–30 seconds: `seedance25`\n- 4–15 seconds: `seedance2`, `seedance2-fast`, `minimax-h3-lite`, `minimax-h3-highspeed`\n- 2–10, 12, 15, 20, 25, 30 seconds: `wan30`, `wan30-prime`\n- 3–15, 20, 25, 30 seconds: `kling-v4`\n- 3–15 seconds: `omni-flash-i2v-v1.2`\n- 5–15 seconds: `minimax-h3`"
+        resolution:
+          type: string
+          description: "Resolution of the video. The options depend on the model. Send the value exactly as shown:\n- 480p, 720p: `seedance25`\n- 480p, 720p, 1080p, 4k: `seedance2`, `seedance2-fast`\n- 480p, 720p, 1080p: `wan30`, `wan30-prime`\n- 720p, 1080p: `kling-v4`\n- 360p, 720p, 1080p, 4k: `omni-flash-i2v-v1.2`\n- 768P, 2K, 4K: `minimax-h3`\n- 480P, 768P: `minimax-h3-lite`\n\n`minimax-h3-highspeed` has one fixed resolution, so leave this out."
+        audio:
+          type: boolean
+          description: "Adds sound to the video. Only some models can do this: `seedance25`, `seedance2`, `seedance2-fast`, `wan30`, `wan30-prime`. Other models make silent videos and don't accept this setting."
+        webhook_url:
+          type: string
+          format: uri
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
+        mode:
+          type: string
+          enum: ["async"]
+          default: "async"
+          description: "Videos are always made in the background, so only `async` is accepted. You can leave this out."
 
     VideoReferenceRequest:
-      allOf:
-        - $ref: "#/components/schemas/VideoCreateRequest"
-        - type: object
-          required: [reference_image_urls]
-          properties:
-            reference_image_urls:
-              type: array
-              minItems: 1
-              items:
-                type: string
-                format: uri
-              description: "Reference images that guide the video, from 1 up to the model's `max_reference_image_urls`."
+      type: object
+      required: ["prompt", "reference_image_urls"]
+      properties:
+        prompt:
+          type: string
+          description: "Describe the video: what happens, the camera movement and the mood."
+        reference_image_urls:
+          type: array
+          items:
+            type: string
+            format: uri
+          minItems: 1
+          maxItems: 50
+          description: "Photos of the people, products or characters to feature, from 1 to 50. The number each model accepts is different:\n- Up to 5: `minimax-h3-reference`\n- Up to 9: `minimax-h3-lite-reference`, `minimax-h3-highspeed-reference`\n- Up to 10: `wan30-reference`, `wan30-prime-reference`, `omni-flash-reference-v1.2`, `kling-v4-reference`\n- Up to 50: `seedance25-reference`, `seedance2-reference`, `seedance2-fast-reference`"
+        model_id:
+          type: string
+          enum: ["minimax-h3-lite-reference", "minimax-h3-highspeed-reference", "seedance25-reference", "seedance2-reference", "seedance2-fast-reference", "wan30-reference", "wan30-prime-reference", "omni-flash-reference-v1.2", "minimax-h3-reference", "kling-v4-reference"]
+          default: "minimax-h3-reference"
+          description: "Model used for the video. Duration, resolution and sound options vary by model. See [Video models](/api-reference/ai-video/video-models)."
+        aspect_ratio:
+          type: string
+          description: "Shape of the video, for example `16:9` or `9:16`. The shapes available depend on the model, and each model has its own default. See [Video models](/api-reference/ai-video/video-models)."
+        duration:
+          type: integer
+          default: 5
+          description: "Length of the video in seconds. The range depends on the model, and the default is 5 seconds:\n- 4–15 seconds: `minimax-h3-lite-reference`, `minimax-h3-highspeed-reference`, `seedance2-reference`, `seedance2-fast-reference`\n- 4–30 seconds: `seedance25-reference`\n- 2–10, 12, 15, 20, 25, 30 seconds: `wan30-reference`, `wan30-prime-reference`\n- 3–15 seconds: `omni-flash-reference-v1.2`\n- 5–15 seconds: `minimax-h3-reference`\n- 3–15, 20, 25, 30 seconds: `kling-v4-reference`"
+        resolution:
+          type: string
+          description: "Resolution of the video. The options depend on the model. Send the value exactly as shown:\n- 480P, 768P: `minimax-h3-lite-reference`\n- 480p, 720p: `seedance25-reference`\n- 480p, 720p, 1080p, 4k: `seedance2-reference`, `seedance2-fast-reference`\n- 480p, 720p, 1080p: `wan30-reference`, `wan30-prime-reference`\n- 360p, 720p, 1080p, 4k: `omni-flash-reference-v1.2`\n- 768P, 2K, 4K: `minimax-h3-reference`\n- 720p, 1080p: `kling-v4-reference`\n\n`minimax-h3-highspeed-reference` has one fixed resolution, so leave this out."
+        audio:
+          type: boolean
+          description: "Adds sound to the video. Only some models can do this: `seedance25-reference`, `seedance2-reference`, `seedance2-fast-reference`, `wan30-reference`, `wan30-prime-reference`. Other models make silent videos and don't accept this setting."
+        webhook_url:
+          type: string
+          format: uri
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
+        mode:
+          type: string
+          enum: ["async"]
+          default: "async"
+          description: "Videos are always made in the background, so only `async` is accepted. You can leave this out."
 
     VideoEditRequest:
       type: object
-      description: "The result follows the length of the clip, so no `duration` is accepted."
+      description: "The result follows the length of your video, so there is no duration setting."
       required: ["prompt", "input_video_url"]
       properties:
         prompt:
           type: string
-          description: "Description of the changes to make."
+          description: "Describe what to change in the video."
         input_video_url:
           type: string
           format: uri
-          description: "Public HTTPS URL of the clip to edit (MP4, MOV or WebM, up to 100 MB). The host must support range requests."
+          description: "Link to the video to edit: MP4, MOV or WebM, up to 100 MB. The link must be public (HTTPS), the host must support range requests, and the file must stay online until the job finishes."
         model_id:
           type: string
-          description: "Video model to use. Available IDs are listed in Video models."
-        aspect_ratio:
-          type: string
-          description: "Shape of the video. Accepted values depend on the model."
+          enum: ["seedance25-video-edit", "seedance2-video-edit", "seedance2-fast-video-edit", "omni-flash-video-edit-v1.2", "grok-video-edit", "happy-horse-video-edit", "kling-v4-video-edit"]
+          default: "omni-flash-video-edit-v1.2"
+          description: "Model used for the video. Duration, resolution and sound options vary by model. See [Video models](/api-reference/ai-video/video-models)."
         resolution:
           type: string
-          description: "Output resolution. Accepted values depend on the model."
+          description: "Resolution of the video. The options depend on the model. Send the value exactly as shown:\n- 480p, 720p: `seedance25-video-edit`, `grok-video-edit`\n- 480p, 720p, 1080p, 4k: `seedance2-video-edit`, `seedance2-fast-video-edit`\n- 360p, 720p, 1080p, 4k: `omni-flash-video-edit-v1.2`\n- 720p, 1080p: `happy-horse-video-edit`, `kling-v4-video-edit`"
         audio:
           type: boolean
-          description: "Keep or generate audio. On by default for models with an audio option."
+          description: "Adds sound to the video. Only some models can do this: `seedance25-video-edit`, `seedance2-video-edit`, `seedance2-fast-video-edit`. Other models make silent videos and don't accept this setting. On by default for the models that support it."
         webhook_url:
           type: string
           format: uri
-          description: "Optional HTTPS URL that is notified when the job finishes."
+          description: "Optional. A public HTTPS link we call when the job finishes. See [Asynchronous requests](/api-reference/async-requests)."
         mode:
           type: string
           enum: ["async"]
           default: "async"
-          description: "Videos always run in the background. Only `async` is accepted."
+          description: "Videos are always made in the background, so only `async` is accepted. You can leave this out."
 
     RecreateRequest:
       type: object
