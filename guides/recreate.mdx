@@ -1,0 +1,53 @@
+---
+title: "Recreate"
+description: "The most accurate way to keep a real person's face in new photos."
+---
+
+## Why Recreate?
+AI Image can edit and create photos of people too. But when the face must look exactly like the real person, use **Recreate**. It works from a trained profile of that person, so the face stays accurate in every photo, not just similar.
+
+| You want to | Use |
+|---|---|
+| Change a background, outfit or detail in a photo | [AI Image](/guides/ai-image) |
+| New photos where the face must be exactly the person | **Recreate** |
+
+## What is a profile?
+A **profile** is a person trained from their photos. Every image made with it looks like that person, not a generic AI face. Train once, then use it as often as you like.
+
+## How to use it
+
+1. **Train a profile** in your GoStudio account. Upload 10 to 30 photos of the person: different angles, expressions and settings, with the face clearly visible.
+2. **Wait until it is ready.** Ready profiles appear in your profile list, and in [List profiles](/api-reference/profiles/list-profiles).
+3. **Choose what to make** with it (below).
+4. **Get the result.** These photos are made in the background and take a little longer than a simple edit.
+
+## What you can make
+
+<CardGroup cols={3}>
+  <Card title="Recreate">
+    Send a photo and a style photo you love. You get the style, with your person in it.
+  </Card>
+  <Card title="Profile Photo">
+    Describe a new photo, such as "in a modern office, natural light". Include one person or several.
+  </Card>
+  <Card title="Recreate Group">
+    Send a group photo and choose 2 to 10 profiles. Each takes the place of one person in the scene.
+  </Card>
+</CardGroup>
+
+## Which model to use
+
+Profile Photo and Recreate Group offer two models (`model_id`):
+
+| Model | Best for |
+|---|---|
+| `nano-banana-2` (default) | The standard choice. Costs less than `gpt-image-2` at 4K. |
+| `gpt-image-2` | A second model with its own look. Same price as `nano-banana-2` at 1K and 2K. |
+
+Both come in 1K, 2K or 4K. You can ask for up to 4 photos at once.
+
+## Tips
+- The better the training photos, the better every result. Avoid sunglasses, heavy filters and group shots.
+- For Recreate Group, the order of profiles matches the people in the scene from the first person onward.
+
+<Card title="Recreate in the API reference" href="/api-reference/recreate/recreate">How to send profiles, fields and examples.</Card>
