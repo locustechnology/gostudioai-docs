@@ -1,60 +1,64 @@
 ---
 title: "Authentication"
-description: "Every request to the GoStudio API must include a Bearer token. This page explains the three caller types and how to obtain each."
+description: "Every request to the GoStudio API is authenticated with your API key, sent as a bearer token."
 ---
 
 ## How it works
 
-The GoStudio API uses **HTTP Bearer authentication**. Include your token in the `Authorization` header on every request:
+Send your API key as a bearer token in the `Authorization` header on every request:
 
 ```
-Authorization: Bearer <your-token>
+Authorization: Bearer <api_key>
 ```
 
-There is no separate API key system. The token you send determines who you are and what you are allowed to access.
-
-## Caller types
-
-Every endpoint in this API declares which **caller type** it accepts. Sending a token that belongs to a disallowed caller type returns `403 forbidden`.
-
-| Caller | Token source | Typical use | Access level |
-|--------|-------------|-------------|--------------|
-| `user` | Supabase JWT from browser login | App users, developers testing | Own data only — cannot read other users |
-| `internal` | Service secret issued by GoStudio | First-party backend services | Full access to all users |
-| `external` | Partner secret issued by GoStudio | Approved partner integrations | Partner-scoped read access |
-
-<Note>
-  As a developer building on the API, you will use the **`user`** caller type unless you are building a server-side integration with explicit internal access.
-</Note>
-
-## Getting a user token
-
-User tokens are Supabase JWTs issued when a user logs into GoStudio.
-
-### From your application
-
-This is the supported path. Use the [Supabase Auth client](https://supabase.com/docs/reference/javascript/auth-getsession) to read the session token, and read it again on every request rather than caching it — the client refreshes the token for you:
-
-```javascript
-const { data: { session } } = await supabase.auth.getSession();
-const token = session.access_token;
+<CodeGroup>
+```bash curl
+curl https://www.gostudio.ai/api/v2/my/credit-balance \
+  -H "Authorization: Bearer <api_key>"
 ```
 
-### By hand, for a one-off test
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/my/credit-balance", {
+  headers: { Authorization: "Bearer <api_key>" }
+});
+```
+
+```python Python
+import requests
+
+res = requests.get(
+    "https://www.gostudio.ai/api/v2/my/credit-balance",
+    headers={"Authorization": "Bearer <api_key>"},
+)
+```
+</CodeGroup>
+
+## Get your API key
+
+<Steps>
+  <Step title="Log in to GoStudio">
+    Go to [gostudio.ai](https://www.gostudio.ai) and log in.
+  </Step>
+  <Step title="Open your profile">
+    Click your **Profile**.
+  </Step>
+  <Step title="Open Account settings">
+    Choose **Account settings**.
+  </Step>
+  <Step title="Generate API key">
+    Click **Generate API key**, then copy it.
+  </Step>
+</Steps>
+
+GoStudio → Login → Profile → Account settings → Generate API key
 
 <Warning>
-  For manual exploration only — never ship this, and never paste a token into a shared document or issue tracker.
+  Keep your API key secret. Never put it in client-side code, a public repository or a shared document. If it is exposed, generate a new one.
 </Warning>
 
-1. Log in at [gostudio.ai](https://www.gostudio.ai).
-2. Open DevTools (**F12**) → **Application** tab → **Cookies**.
-3. Click `https://www.gostudio.ai` in the left pane.
-4. Find the cookie named `sb-<project-ref>-auth-token`. Large sessions are split into numbered chunks (`sb-<project-ref>-auth-token.0`, `sb-<project-ref>-auth-token.1`, …) — concatenate their values in order.
-5. URL-decode the concatenated value to get the session JSON, then copy the `access_token` string. It starts with `eyJ...`.
+## Missing or invalid key
 
-## Token expiry
-
-User tokens expire after approximately **1 hour**. When a token expires, the API returns:
+A request without a valid key returns `401`:
 
 ```json
 {
@@ -62,31 +66,9 @@ User tokens expire after approximately **1 hour**. When a token expires, the API
   "error": {
     "type": "authentication_error",
     "code": "unauthorized",
-    "dev": 40100,
-    "message": "Missing or invalid Authorization Bearer token."
+    "message": "Missing or invalid token."
   }
 }
 ```
 
-<Warning>
-  Always handle `401` responses in your integration. Refresh the token using your auth client and retry the request.
-</Warning>
-
-## Endpoint access matrix
-
-| Endpoint | `user` | `internal` | `external` |
-|---------------|--------|-----------|-----------|
-| `POST /apps/watermark-remover` | ✅ | ❌ | ❌ |
-| `GET /apps/watermark-remover/info` | ✅ | ✅ | ❌ |
-| `GET /apps/watermark-remover/{jobId}` | ✅ | ❌ | ❌ |
-| `POST /apps/watermark-remover/generate` | ✅ | ❌ | ❌ |
-| `POST /apps/watermark-remover/record` | ✅ | ❌ | ❌ |
-| `POST /apps/watermark-remover/webhook` | ❌ | ❌ | ❌ (provider signature) |
-
-<Warning>
-  Every endpoint that acts on "the authenticated user" is `user`-only. An `internal` service token is accepted by the auth layer but carries no user identity, so these endpoints have no account to charge or read and cannot serve it — you will see a `404` or a `500`, not a clean `403`. `GET /apps/watermark-remover/info` is the exception: it returns model metadata that belongs to no particular user, so a service token works there.
-</Warning>
-
-<Note>
-  `POST /apps/watermark-remover/webhook` is called by the AI provider, not by you. It is authenticated by the provider's signature rather than by a caller token, and takes no GoStudio credentials.
-</Note>
+A key that is not allowed on an endpoint returns `403 forbidden`.

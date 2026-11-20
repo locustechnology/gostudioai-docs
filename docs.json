@@ -10,16 +10,16 @@
   },
   "fonts": {
     "heading": {
-      "family": "Plus Jakarta Sans"
+      "family": "Inter"
     },
     "body": {
-      "family": "Poppins"
+      "family": "Inter"
     }
   },
   "appearance": {
     "default": "light"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "logo": {
     "light": "/logo/light.png",
     "dark": "/logo/dark.png",
@@ -106,7 +106,6 @@
             "pages": [
               "openapi.yaml GET /api/v2/my/credit-balance",
               "openapi.yaml GET /api/v2/my/credit-history",
-              "openapi.yaml GET /api/v2/my/profile",
               "openapi.yaml GET /api/v2/my/generations",
               "openapi.yaml GET /api/v2/my/generations/{id}",
               "openapi.yaml GET /api/v2/my/images",
