@@ -1,0 +1,93 @@
+---
+title: "Authentication"
+description: "Authenticate every request with your API key."
+---
+
+## Obtaining an API key
+
+<Steps>
+  <Step title="Log in to GoStudio">
+    Go to [gostudio.ai](https://www.gostudio.ai) and log in.
+  </Step>
+  <Step title="Open your profile">
+    Click your **Profile**.
+  </Step>
+  <Step title="Open Account settings">
+    Choose **Account settings**.
+  </Step>
+  <Step title="Generate API key">
+    Click **Generate API key**, then copy it.
+  </Step>
+</Steps>
+
+## Using your API key
+
+Send your key as a bearer token in the `Authorization` header of every request:
+
+```
+Authorization: Bearer <api_key>
+```
+
+<CodeGroup>
+```bash curl
+curl https://www.gostudio.ai/api/v2/my/credit-balance \
+  -H "Authorization: Bearer <api_key>"
+```
+
+```javascript Node.js
+const res = await fetch("https://www.gostudio.ai/api/v2/my/credit-balance", {
+  headers: { Authorization: "Bearer <api_key>" }
+});
+```
+
+```python Python
+import requests
+
+res = requests.get(
+    "https://www.gostudio.ai/api/v2/my/credit-balance",
+    headers={"Authorization": "Bearer <api_key>"},
+)
+```
+</CodeGroup>
+
+The model lists ([`GET /image/info`](/api-reference/ai-image/image-models) and [`GET /video/info`](/api-reference/ai-video/video-models)) are public and need no key.
+
+## Error responses
+
+A request without a valid key returns `401`:
+
+```json
+{
+  "status": 401,
+  "error": {
+    "type": "authentication_error",
+    "code": "unauthorized",
+    "message": "Missing or invalid Authorization Bearer token."
+  }
+}
+```
+
+A key that is not allowed on an endpoint returns `403 forbidden`.
+
+## Best practices
+
+<AccordionGroup>
+  <Accordion title="Keep your key secret">
+    Anyone with your key can spend your credits. Never put it in client-side code, a mobile app, a public repository or a shared document. Call the API from your own server.
+  </Accordion>
+  <Accordion title="Use environment variables">
+    Keep the key out of your code.
+
+    ```bash
+    export GOSTUDIO_API_KEY="<api_key>"
+    ```
+
+    ```python
+    import os
+    HEADERS = {"Authorization": f"Bearer {os.environ['GOSTUDIO_API_KEY']}"}
+    ```
+  </Accordion>
+  <Accordion title="Replace an exposed key">
+    If your key is exposed, generate a new one in **Account settings** and update your servers.
+  </Accordion>
+</AccordionGroup>

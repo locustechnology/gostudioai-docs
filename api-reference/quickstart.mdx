@@ -1,0 +1,200 @@
+---
+title: "Quickstart"
+description: "Go from zero to your first image and video."
+---
+
+This guide takes you through the main flow: check your key, run an app, create an image, make a video and get its result, then use a profile.
+
+<Note>
+**Before you start:** you need an API key. See [Authentication](/api-reference/authentication) to get one. Every request goes to `https://www.gostudio.ai/api/v2` with the header `Authorization: Bearer <api_key>`.
+</Note>
+
+<Steps>
+  <Step title="Authenticate">
+    Check that your key works by reading your credit balance.
+
+    <CodeGroup>
+    ```bash curl
+    curl https://www.gostudio.ai/api/v2/my/credit-balance \
+      -H "Authorization: Bearer <api_key>"
+    ```
+
+    ```python Python
+    import requests
+
+    API = "https://www.gostudio.ai/api/v2"
+    HEADERS = {"Authorization": "Bearer <api_key>"}
+
+    print(requests.get(f"{API}/my/credit-balance", headers=HEADERS).json())
+    ```
+    </CodeGroup>
+
+    ```json
+    { "status": 200, "data": { "credits": 120, "created_at": "2026-09-14T08:30:00Z" } }
+    ```
+  </Step>
+
+  <Step title="Run an app">
+    Apps do one job each and wait for the result. This makes the person in a photo look 65.
+
+    <CodeGroup>
+    ```bash curl
+    curl -X POST https://www.gostudio.ai/api/v2/apps/age-modifier \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{ "image_url": "https://example.com/me.jpg", "target_age": 65 }'
+    ```
+
+    ```python Python
+    res = requests.post(f"{API}/apps/age-modifier", headers=HEADERS,
+                        json={"image_url": "https://example.com/me.jpg", "target_age": 65})
+    print(res.json())
+    ```
+    </CodeGroup>
+
+    ```json
+    {
+      "status": 200,
+      "data": {
+        "job_id": "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f",
+        "status": "completed",
+        "output_urls": ["https://…/result.jpg"],
+        "credits_deducted": 8,
+        "credit_balance": 112
+      }
+    }
+    ```
+
+    <Tip>
+    Images you send must be public `https` URLs that stay online until the job finishes.
+    </Tip>
+  </Step>
+
+  <Step title="Create an image">
+    Describe the image you want.
+
+    <CodeGroup>
+    ```bash curl
+    curl -X POST https://www.gostudio.ai/api/v2/image/create \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{ "prompt": "a red fox in the snow at sunrise", "aspect_ratio": "16:9", "quality": "medium" }'
+    ```
+
+    ```python Python
+    res = requests.post(f"{API}/image/create", headers=HEADERS,
+                        json={"prompt": "a red fox in the snow at sunrise", "aspect_ratio": "16:9", "quality": "medium"})
+    print(res.json())
+    ```
+    </CodeGroup>
+
+    The response has the same shape as in step 2, plus the `model_id` used.
+
+    <Tip>
+    Leave out `model_id` to use the default model. To edit photos you already have, use [`POST /image/edit`](/api-reference/ai-image/image-edit) with `input_image_urls`. See [Image models](/api-reference/ai-image/image-models) for every model and option.
+    </Tip>
+  </Step>
+
+  <Step title="Make a video">
+    Video always runs in the background. You get `202` and a `poll_url` straight away.
+
+    <CodeGroup>
+    ```bash curl
+    curl -X POST https://www.gostudio.ai/api/v2/video/create \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{ "prompt": "a paper boat sailing down a rainy street", "duration": 5 }'
+    ```
+
+    ```python Python
+    res = requests.post(f"{API}/video/create", headers=HEADERS,
+                        json={"prompt": "a paper boat sailing down a rainy street", "duration": 5})
+    job = res.json()["data"]
+    ```
+    </CodeGroup>
+
+    ```json
+    {
+      "status": 202,
+      "data": {
+        "job_id": "7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f",
+        "status": "processing",
+        "model_id": "seedance2-fast",
+        "credits_deducted": 55,
+        "poll_url": "https://www.gostudio.ai/api/v2/jobs/7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f"
+      }
+    }
+    ```
+
+    <Warning>
+    Do not send the request again after a `202`. The job is still running, and a second request is charged again.
+    </Warning>
+  </Step>
+
+  <Step title="Poll for the result">
+    Call `poll_url` every 5 seconds until the job is done.
+
+    <CodeGroup>
+    ```bash curl
+    curl https://www.gostudio.ai/api/v2/jobs/7c1d2e3f-4a5b-4c6d-8e9f-0a1b2c3d4e5f \
+      -H "Authorization: Bearer <api_key>"
+    ```
+
+    ```python Python
+    import time
+
+    while True:
+        result = requests.get(job["poll_url"], headers=HEADERS).json()["data"]
+        if result["status"] not in ("pending", "processing"):
+            break
+        time.sleep(5)
+    print(result)
+    ```
+    </CodeGroup>
+
+    | `status` | Meaning |
+    |---|---|
+    | `pending`, `processing` | Still running. Keep polling. |
+    | `completed` | Done. The files are in `output_urls`. |
+    | `failed` | Read `error`. Your credits are returned. |
+    | `abandoned` | The job was stopped and no longer exists. |
+
+    Prefer not to poll? Send a `webhook_url`. See [Asynchronous requests](/api-reference/async-requests).
+  </Step>
+
+  <Step title="Use a profile">
+    A profile keeps a real person's identity. Train profiles in your GoStudio account, then list the ready ones:
+
+    ```bash
+    curl https://www.gostudio.ai/api/v2/profiles \
+      -H "Authorization: Bearer <api_key>"
+    ```
+
+    Write the person into a prompt as `[[profile_id]]`:
+
+    <CodeGroup>
+    ```bash curl
+    curl -X POST https://www.gostudio.ai/api/v2/profile-photo \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{ "prompt": "[[b5ccefdfcaca425dbcb2abd6a58e9a09]] in a modern office, natural light" }'
+    ```
+
+    ```python Python
+    res = requests.post(f"{API}/profile-photo", headers=HEADERS,
+                        json={"prompt": "[[b5ccefdfcaca425dbcb2abd6a58e9a09]] in a modern office, natural light"})
+    print(res.json())
+    ```
+    </CodeGroup>
+
+    Profile Photo runs in the background like video, so poll the result as in step 5. See [List profiles](/api-reference/profiles/list-profiles) for the rules.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Asynchronous requests" href="/api-reference/async-requests">Background jobs, polling and webhooks.</Card>
+  <Card title="Authentication" href="/api-reference/authentication">Getting and protecting your key.</Card>
+  <Card title="Pricing" href="/resources/pricing">What each tool costs.</Card>
+</CardGroup>
