@@ -53,7 +53,69 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "openapi.yaml"
+        "groups": [
+          {
+            "group": "Jobs",
+            "pages": [
+              "openapi.yaml GET /api/v2/jobs/{job_id}"
+            ]
+          },
+          {
+            "group": "Apps",
+            "pages": [
+              "openapi.yaml POST /api/v2/apps/age-modifier",
+              "openapi.yaml POST /api/v2/apps/watermark-remover",
+              "openapi.yaml POST /api/v2/apps/weight-shift",
+              "openapi.yaml POST /api/v2/apps/group-photo"
+            ]
+          },
+          {
+            "group": "AI Image",
+            "pages": [
+              "openapi.yaml POST /api/v2/image/create",
+              "openapi.yaml POST /api/v2/image/edit",
+              "openapi.yaml GET /api/v2/image/info"
+            ]
+          },
+          {
+            "group": "AI Video",
+            "pages": [
+              "openapi.yaml POST /api/v2/video/create",
+              "openapi.yaml POST /api/v2/video/keyframes",
+              "openapi.yaml POST /api/v2/video/reference",
+              "openapi.yaml POST /api/v2/video/edit",
+              "openapi.yaml GET /api/v2/video/info"
+            ]
+          },
+          {
+            "group": "Recreate",
+            "pages": [
+              "openapi.yaml POST /api/v2/recreate",
+              "openapi.yaml POST /api/v2/profile-photo",
+              "openapi.yaml POST /api/v2/recreate-group"
+            ]
+          },
+          {
+            "group": "Profiles",
+            "pages": [
+              "openapi.yaml GET /api/v2/profiles"
+            ]
+          },
+          {
+            "group": "My data",
+            "pages": [
+              "openapi.yaml GET /api/v2/my/credit-balance",
+              "openapi.yaml GET /api/v2/my/credit-history",
+              "openapi.yaml GET /api/v2/my/profile",
+              "openapi.yaml GET /api/v2/my/generations",
+              "openapi.yaml GET /api/v2/my/generations/{id}",
+              "openapi.yaml GET /api/v2/my/images",
+              "openapi.yaml GET /api/v2/my/images/{id}",
+              "openapi.yaml GET /api/v2/my/uploads",
+              "openapi.yaml GET /api/v2/my/uploads/{id}"
+            ]
+          }
+        ]
       }
     ]
   },
