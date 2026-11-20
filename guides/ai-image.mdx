@@ -1,0 +1,48 @@
+---
+title: "AI Image"
+description: "Create images from a description, or change the ones you have."
+---
+
+## Two ways to use it
+
+<CardGroup cols={2}>
+  <Card title="Create">
+    Describe what you want and get a new image. For example, "a red fox in the snow at sunrise".
+  </Card>
+  <Card title="Edit">
+    Send one or more photos and say what to change. For example, "change the background to a beach at sunset".
+  </Card>
+</CardGroup>
+
+## How to use it
+1. **Choose create or edit.** Create starts from words only. Edit starts from your photos.
+2. **Write your description.** Say what you want to see: the subject, the place, the light and the style.
+3. **Pick a model** (`model_id`), or leave it to the default (see below).
+4. **Choose the quality or size.** Higher settings give more detail and cost more.
+5. **Choose a shape** (`aspect_ratio`), such as square, portrait or wide, or let the model decide with `auto`. When editing, `auto` keeps the shape of your photo.
+
+## Which model to use
+
+A model offers either quality levels or sizes, never both. The full, current list is always in [Image models](/api-reference/ai-image/image-models).
+
+| Model (`model_id`) | Options | Photos to edit |
+|---|---|---|
+| `gpt-image-2-6-sunburst` (default) | Quality: low, medium, high, xhigh, max | Up to 10 |
+| `gpt-image-2-6-flare` | Quality: low, medium, high, xhigh, max | Up to 10 |
+| `nano-banana-2.1` | Size: 1K, 2K, 4K | Up to 10 |
+| `gpt-image-2` | Quality: low, medium, high | Up to 10 |
+| `nano-banana-pro` | Size: 1K, 2K, 4K | Up to 10 |
+| `pruna` | One fixed size | 1 |
+| `minimax-h3-image` | One fixed size | Up to 10 |
+
+Not sure? Start with the default.
+
+<Note>
+AI Image can edit photos of people, but the face may change slightly. When the face must stay exactly the same person, use [Recreate](/guides/recreate).
+</Note>
+
+## Tips
+- When editing, name only what should change. Everything else stays the same.
+- See [Pricing](/resources/pricing) for the cost of each model and setting.
+
+<Card title="Image in the API reference" href="/api-reference/ai-image/image-create">Fields, model IDs and examples.</Card>

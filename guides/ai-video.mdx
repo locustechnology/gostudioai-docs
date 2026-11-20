@@ -1,0 +1,94 @@
+---
+title: "AI Video"
+description: "Four ways to make a video, and which model to pick."
+---
+
+## Four ways to make a video
+
+<CardGroup cols={2}>
+  <Card title="From a description">
+    Say what should happen. Good for social clips and ads from an idea.
+  </Card>
+  <Card title="From a photo">
+    Start from a photo, and with some models an ending photo too. Good for bringing a still image to life.
+  </Card>
+  <Card title="From references">
+    Show the people, products or characters to feature. They stay consistent through the video.
+  </Card>
+  <Card title="Edit a video">
+    Send a short clip and say what to change. Good for restyling footage you already have.
+  </Card>
+</CardGroup>
+
+## How to use it
+1. **Choose the way** that matches what you have: an idea, a photo, reference images or a clip.
+2. **Describe the video:** what happens, the camera movement, the mood.
+3. **Pick a model** (`model_id`), or leave it to the default.
+4. **Choose the length and resolution.** Longer and sharper videos cost more.
+5. **Turn sound on** (`audio`), if the model can add it.
+6. **Wait for the result.** Videos take longer than images, so they are made in the background.
+
+## Which model to use
+
+These are the current models for each way. The full, current list is always in [Video models](/api-reference/ai-video/video-models).
+
+### From a description
+| Model (`model_id`) | Resolution | Length | Sound |
+|---|---|---|---|
+| `seedance25` | 480p, 720p | 4–30 s | Yes |
+| `seedance2` | 480p, 720p, 1080p, 4k | 4–15 s | Yes |
+| `seedance2-fast` (default) | 480p, 720p, 1080p, 4k | 4–15 s | Yes |
+| `wan30` | 480p, 720p, 1080p | 2–30 s | Yes |
+| `wan30-prime` | 480p, 720p, 1080p | 2–30 s | Yes |
+| `kling-v4` | 720p, 1080p | 3–30 s | No |
+| `omni-flash-i2v-v1.2` | 360p, 720p, 1080p, 4k | 3–15 s | No |
+| `minimax-h3` | 768P, 2K, 4K | 5–15 s | No |
+| `minimax-h3-lite` | 480P, 768P | 4–15 s | No |
+| `minimax-h3-highspeed` | One fixed resolution | 4–15 s | No |
+
+### From a photo
+| Model (`model_id`) | Resolution | Length | Sound | End photo |
+|---|---|---|---|---|
+| `seedance25` | 480p, 720p | 4–30 s | Yes | No |
+| `seedance2` | 480p, 720p, 1080p, 4k | 4–15 s | Yes | Optional |
+| `seedance2-fast` (default) | 480p, 720p, 1080p, 4k | 4–15 s | Yes | Optional |
+| `wan30` | 480p, 720p, 1080p | 2–30 s | Yes | Optional |
+| `wan30-prime` | 480p, 720p, 1080p | 2–30 s | Yes | Optional |
+| `kling-v4` | 720p, 1080p | 3–30 s | No | Optional |
+| `omni-flash-i2v-v1.2` | 360p, 720p, 1080p, 4k | 3–15 s | No | No |
+| `minimax-h3` | 768P, 2K, 4K | 5–15 s | No | Optional |
+| `minimax-h3-lite` | 480P, 768P | 4–15 s | No | Optional |
+| `minimax-h3-highspeed` | One fixed resolution | 4–15 s | No | Optional |
+
+### From references
+| Model (`model_id`) | Resolution | Length | Sound | Reference photos |
+|---|---|---|---|---|
+| `minimax-h3-lite-reference` | 480P, 768P | 4–15 s | No | Up to 9 |
+| `minimax-h3-highspeed-reference` | One fixed resolution | 4–15 s | No | Up to 9 |
+| `seedance25-reference` | 480p, 720p | 4–30 s | Yes | Up to 50 |
+| `seedance2-reference` | 480p, 720p, 1080p, 4k | 4–15 s | Yes | Up to 50 |
+| `seedance2-fast-reference` | 480p, 720p, 1080p, 4k | 4–15 s | Yes | Up to 50 |
+| `wan30-reference` | 480p, 720p, 1080p | 2–30 s | Yes | Up to 10 |
+| `wan30-prime-reference` | 480p, 720p, 1080p | 2–30 s | Yes | Up to 10 |
+| `omni-flash-reference-v1.2` | 360p, 720p, 1080p, 4k | 3–15 s | No | Up to 10 |
+| `minimax-h3-reference` (default) | 768P, 2K, 4K | 5–15 s | No | Up to 5 |
+| `kling-v4-reference` | 720p, 1080p | 3–30 s | No | Up to 10 |
+
+### Edit a video
+The result follows the length of your clip, so there is no length setting.
+
+| Model (`model_id`) | Resolution | Sound |
+|---|---|---|
+| `seedance25-video-edit` | 480p, 720p | Yes |
+| `seedance2-video-edit` | 480p, 720p, 1080p, 4k | Yes |
+| `seedance2-fast-video-edit` | 480p, 720p, 1080p, 4k | Yes |
+| `omni-flash-video-edit-v1.2` (default) | 360p, 720p, 1080p, 4k | No |
+| `grok-video-edit` | 480p, 720p | No |
+| `happy-horse-video-edit` | 720p, 1080p | No |
+| `kling-v4-video-edit` | 720p, 1080p | No |
+
+## Tips
+- See [Pricing](/resources/pricing) for the cost per second of each model.
+- Longer clips and higher resolutions cost more, so test with a short, low-resolution clip first.
+
+<Card title="Video in the API reference" href="/api-reference/ai-video/video-create">Fields, model IDs and examples.</Card>

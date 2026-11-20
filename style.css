@@ -195,9 +195,14 @@
    ------------------------------------------------------------------------ */
 #sidebar a,
 #navigation-items a {
-  font-size: 13px !important;
+  font-size: 15px !important;
   font-weight: 400 !important;
   line-height: 1.4 !important;
+}
+
+#sidebar a *,
+#navigation-items a * {
+  font-size: inherit !important;
 }
 
 /* Group headings in the sidebar ("Get Started", "Core Concepts") — these are
@@ -205,7 +210,7 @@
    them up as h3.sidebar-title inside .sidebar-group-header. */
 .sidebar-group-header,
 .sidebar-group-header .sidebar-title {
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 400 !important;
   letter-spacing: 0.16em !important;
   text-transform: uppercase !important;
