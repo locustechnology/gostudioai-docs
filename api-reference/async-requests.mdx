@@ -3,10 +3,10 @@ title: "Asynchronous requests"
 description: "Run jobs in the background, poll for the result, and get a webhook when they finish."
 ---
 
-Every generation request creates a **job**. You choose how to wait for it with `mode`:
+Every generation request creates a **job** and returns its `job_id`. `mode` decides when you get the result:
 
-- **`sync`:** the request waits for the result, up to 270 seconds.
-- **`async`:** you get a `job_id` and a `poll_url` straight away, and the job runs in the background.
+- **`sync`:** the request waits and returns the finished result in `output_urls`, up to 270 seconds.
+- **`async`:** the request returns straight away with a `poll_url`, and the job keeps running in the background. You get the result by polling or with a webhook.
 
 If a `sync` request runs out of time, it returns `202` like an `async` request, and the job keeps running.
 
