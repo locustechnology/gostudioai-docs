@@ -83,15 +83,15 @@
 
 /* --- Type scale ----------------------------------------------------------
    insidePage's ten-step scale: 32 · 28 · 24 · 22 · 20 · 18 · 16 · 14 · 13 · 12 · 11.
-   Nothing below is off that scale. Weight is 400 everywhere, per the two-weight
-   rule — a heading reads as a heading because it is bigger and darker.
+   Nothing below is off that scale. Body text is 400. Headings (page title, h2–h6 and the API section
+   headings) are 600 so they read clearly as headings.
    ------------------------------------------------------------------------ */
 
 /* Page title — insidePage.fonts.pageTitle, one step up because docs body copy
    runs at 16px rather than the app shell's 14px. */
 #page-title {
   font-size: 24px !important;
-  font-weight: 400 !important;
+  font-weight: 600 !important;
   line-height: 1.2 !important;
   letter-spacing: -0.01em !important;
   color: var(--gs-heading) !important;
@@ -137,7 +137,7 @@
 .mdx-content h4,
 .mdx-content h5,
 .mdx-content h6 {
-  font-weight: 400 !important;
+  font-weight: 600 !important;
   color: var(--gs-heading) !important;
   letter-spacing: 0 !important;
 }
@@ -391,4 +391,125 @@ button,
 #sidebar .font-semibold,
 #sidebar .font-bold {
   font-weight: 400 !important;
+}
+
+/* ===========================================================================
+   API reference pages
+   Only pages with an .api-section (the OpenAPI-generated pages) are touched, so
+   guides keep their 16px body copy. One family everywhere: Inter, including
+   parameter names, which Mintlify otherwise sets in a monospace face. Code
+   blocks (cURL, JSON) stay monospace.
+   =========================================================================== */
+
+/* Intro description and any prose on the page: a step smaller, with room
+   between paragraphs and lists. */
+#content-area:has(.api-section) .mdx-content p,
+#content-area:has(.api-section) .mdx-content li {
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+}
+
+#content-area:has(.api-section) .mdx-content p {
+  margin-top: 0 !important;
+  margin-bottom: 14px !important;
+}
+
+#content-area:has(.api-section) .mdx-content p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Section blocks ("Authorizations", "Query Parameters", "Body", "Response"):
+   clear space above each one, and a tidy rule under its heading. */
+#content-area .api-section {
+  margin-top: 40px !important;
+}
+
+#content-area .api-section-heading {
+  margin-bottom: 4px !important;
+}
+
+#content-area .api-section-heading-title {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  color: var(--gs-heading) !important;
+}
+
+/* One parameter = one clean row: even padding, hairline between rows. */
+#content-area .primitive-param-field > div,
+#content-area .object-param-field > div {
+  padding-top: 20px !important;
+  padding-bottom: 20px !important;
+}
+
+/* Parameter name and its type / required pills sit on one tidy line. */
+#content-area .param-head {
+  font-family: inherit !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  row-gap: 8px;
+}
+
+#content-area [data-component-part="field-name"] {
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+#content-area [data-component-part="field-info-pill"],
+#content-area [data-component-part="field-required-pill"] {
+  font-family: inherit !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+
+/* Parameter descriptions: smaller than body, with air above and between. */
+#content-area .primitive-param-field .prose,
+#content-area .object-param-field .prose {
+  margin-top: 12px !important;
+}
+
+#content-area .primitive-param-field .prose p,
+#content-area .object-param-field .prose p,
+#content-area .primitive-param-field .prose li,
+#content-area .object-param-field .prose li {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  margin-bottom: 10px !important;
+}
+
+#content-area .primitive-param-field .prose p:last-child,
+#content-area .object-param-field .prose p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Inline code inside the API prose: smaller so it does not outweigh the text. */
+#content-area:has(.api-section) .mdx-content :not(pre) > code {
+  font-size: 12px !important;
+  padding: 0.1em 0.35em !important;
+}
+
+/* ===========================================================================
+   Headings stay bold. These sit after the global weight guard above so they
+   win the tie against its `.font-semibold` reset.
+   =========================================================================== */
+#content-area #page-title,
+#content-area .mdx-content :is(h2, h3, h4, h5, h6):not([data-component-part="card-title"]),
+#content-area .api-section-heading-title {
+  font-weight: 600 !important;
+}
+
+/* API pages: slightly smaller title and intro to match the compact body. */
+@media (min-width: 640px) {
+  #content-area:has(.api-section) #page-title {
+    font-size: 28px !important;
+  }
+}
+
+#content-area:has(.api-section) header p,
+#content-area:has(.api-section) #page-title + * {
+  font-size: 14px !important;
+  line-height: 1.7 !important;
 }
