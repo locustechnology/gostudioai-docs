@@ -1,0 +1,167 @@
+---
+title: "API pricing"
+description: "What each GoStudio API endpoint costs in credits."
+---
+
+{/* The price tables load live from the production API, so they always match what is charged. */}
+export const PRICING_URL = "https://www.gostudio.ai/api/v2/pricing";
+
+export const LivePrices = ({ path, per }) => {
+  const [rows, setRows] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    fetch(PRICING_URL)
+      .then((r) => r.json())
+      .then((j) => {
+        let node = j.data;
+        for (const key of path) node = node?.[key];
+        if (!node) throw new Error("missing");
+        const out = [];
+        for (const [name, value] of Object.entries(node)) {
+          if (typeof value === "number") out.push([name, "", value]);
+          else for (const [option, credits] of Object.entries(value)) out.push([name, option === "default" ? "—" : option, credits]);
+        }
+        setRows(out);
+      })
+      .catch(() => setFailed(true));
+  }, []);
+  if (failed) return <p>Prices could not be loaded. Please refresh the page.</p>;
+  if (!rows) return <p>Loading current prices…</p>;
+  if (rows.length === 1 && rows[0][0] === "credits") return <p><b>{rows[0][2]} credits</b></p>;
+  const hasOption = rows.some((r) => r[1] !== "");
+  return (
+    <table>
+      <thead><tr><th>Model or option</th>{hasOption && <th>Option</th>}<th>{per}</th></tr></thead>
+      <tbody>
+        {rows.map(([name, option, credits], i) => (
+          <tr key={i}><td><code>{name}</code></td>{hasOption && <td>{option}</td>}<td><b>{credits}</b></td></tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+export const PriceMatrix = ({ kind }) => {
+  const [table, setTable] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    fetch(PRICING_URL)
+      .then((r) => r.json())
+      .then((j) => {
+        const QUALITY = ["low", "medium", "high", "xhigh", "max"];
+        const rank = (k) => { const q = QUALITY.indexOf(k); if (q >= 0) return q; const n = parseFloat(k); return /k$/i.test(k) ? n * 1000 : n; };
+        const label = (k) => (/k$/i.test(k) ? k.toUpperCase() : k.toLowerCase());
+        const isVideo = kind.startsWith("video:");
+        let models = isVideo ? j.data?.video?.[kind.slice(6)] : kind === "profile" ? j.data?.profile_photo : j.data?.image;
+        if (!models) throw new Error("missing");
+        if (kind.startsWith("image")) {
+          const byQuality = (opts) => Object.keys(opts).every((k) => QUALITY.includes(k));
+          models = Object.fromEntries(Object.entries(models).filter(([, o]) => (kind === "image-quality") === byQuality(o)));
+        }
+        const value = (v) => (isVideo ? v.credits_per_second : v);
+        const fixed = (opts) => { const keys = Object.keys(opts); return keys.length === 1 && (keys[0] === "default" || !isVideo); };
+        const cols = [...new Set(Object.values(models).filter((o) => !fixed(o)).flatMap((o) => Object.keys(o).map((k) => k.toLowerCase())))].sort((a, b) => rank(a) - rank(b));
+        const rows = Object.entries(models).map(([model, opts]) => {
+          const lower = Object.fromEntries(Object.entries(opts).map(([k, v]) => [k.toLowerCase(), value(v)]));
+          let audio = null;
+          if (isVideo) {
+            const vals = Object.values(opts);
+            if (vals.some((v) => v.credits_per_second_with_audio === undefined)) audio = "No audio";
+            else {
+              const extra = vals.map((v) => v.credits_per_second_with_audio - v.credits_per_second);
+              const lo = Math.min(...extra), hi = Math.max(...extra);
+              audio = hi === 0 ? "Same price" : lo === hi ? `+${lo} / second` : `+${lo}–${hi} / second`;
+            }
+          }
+          return { model, fixed: fixed(opts) ? value(Object.values(opts)[0]) : null, cells: cols.map((c) => lower[c]), audio };
+        });
+        setTable({ cols: cols.map(label), rows, isVideo });
+      })
+      .catch(() => setFailed(true));
+  }, []);
+  if (failed) return <p>Prices could not be loaded. Please refresh the page.</p>;
+  if (!table) return <p>Loading current prices…</p>;
+  const span = Math.max(table.cols.length, 1);
+  return (
+    <table>
+      <thead><tr><th>Model (<code>model_id</code>)</th>{table.cols.map((c) => <th key={c}>{c}</th>)}{table.isVideo && <th>Audio</th>}</tr></thead>
+      <tbody>
+        {table.rows.map((r) => (
+          <tr key={r.model}>
+            <td><code>{r.model}</code></td>
+            {r.fixed !== null
+              ? <td colSpan={span}><b>{r.fixed}</b> ({table.isVideo ? "one fixed resolution" : "one fixed size"})</td>
+              : r.cells.map((v, i) => <td key={i}>{v === undefined ? "–" : <b>{v}</b>}</td>)}
+            {table.isVideo && <td>{r.audio}</td>}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
+All prices are in **credits**. Credits are taken when a job is accepted and **returned automatically if the job fails**. The credits actually charged are in `credits_deducted` on every response.
+
+<Note>
+The tables on this page are always up to date and match what you are charged.
+</Note>
+
+## Apps
+
+**Age Modifier** (`POST /apps/age-modifier`): any age and mode.
+<LivePrices path={["apps", "age_modifier"]} per="Credits" />
+
+**Weight Shift** (`POST /apps/weight-shift`): any `weight_level`.
+<LivePrices path={["apps", "weight_shift"]} per="Credits" />
+
+**Watermark Remover** (`POST /apps/watermark-remover`), by `model_id`:
+<LivePrices path={["apps", "watermark_remover", "credits_by_model"]} per="Credits" />
+
+**Group Photo** (`POST /apps/group-photo`), by `resolution`. The same for 2 or 20 people.
+<LivePrices path={["apps", "group_photo", "credits_by_resolution"]} per="Credits" />
+
+## Image
+
+`POST /image/create` and `POST /image/edit` cost the same. **Credits per image.** A dash means the model does not offer that option.
+
+**Priced by quality** (send `quality`):
+<PriceMatrix kind="image-quality" />
+
+**Priced by resolution** (send `resolution`):
+<PriceMatrix kind="image-resolution" />
+
+## Video
+
+Video is priced **per second**. Each table gives the credits for **one second**, without audio and with `audio: true`.
+
+**Cost = credits per second × duration in seconds**, rounded up to a whole credit.
+
+| Example | Calculation | Credits |
+|---|---|---|
+| `seedance2` at `720p`, 8 seconds | 30 × 8 | **240** |
+| `seedance2-fast` at `480p`, 5 seconds | 11 × 5 | **55** |
+
+In each table, a dash means the model does not offer that resolution. The **Audio** column shows what `audio: true` adds: "Same price", "+N / second", or "No audio" (the model makes video without sound and refuses `audio: true`).
+
+Column headers are shown in one style (`4K`, `768p`). Send `resolution` exactly as the model lists it in [Video models](/api-reference/ai-video/video-models), for example `4k` or `768P`.
+
+### Text to video: `POST /video/create`
+<PriceMatrix kind="video:create" />
+
+### From frames: `POST /video/keyframes`
+<PriceMatrix kind="video:keyframes" />
+
+### From references: `POST /video/reference`
+<PriceMatrix kind="video:reference" />
+
+### Video edit: `POST /video/edit`
+You do not send a duration. The price is credits per second × the length of your clip, read from the file.
+<PriceMatrix kind="video:edit" />
+
+## Recreate
+
+**Recreate** (`POST /recreate`), per image. Multiply by `num_output_images` (1–4).
+<LivePrices path={["recreate"]} per="Credits per image" />
+
+**Profile Photo** (`POST /profile-photo`) and **Recreate Group** (`POST /recreate-group`), per image, by model and `resolution`. Multiply by `num_output_images` (1–4).
+<PriceMatrix kind="profile" />

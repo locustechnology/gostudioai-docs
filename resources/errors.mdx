@@ -1,0 +1,68 @@
+---
+title: "Errors"
+description: "What went wrong, and what to do next."
+---
+
+Every error has the same shape:
+
+```json
+{
+  "status": 402,
+  "error": {
+    "type": "billing_error",
+    "code": "insufficient_credits",
+    "message": "You don't have enough credits."
+  }
+}
+```
+
+Use `code` in your code. `message` is for people and can change. If the job was already created, the response also has a top-level `job_id`.
+
+## Types
+
+| `type` | What to do |
+|---|---|
+| `validation_error` | Fix the request. The `message` names the field. |
+| `authentication_error` | Check your API key. |
+| `permission_error` | Your key cannot call this endpoint. |
+| `billing_error` | Add credits. |
+| `not_found_error` | The job, profile or item does not exist for you. |
+| `rate_limit_error` | Slow down and try again. |
+| `provider_error` | The result could not be made. Credits are returned. Try again or change the input. |
+| `storage_error` | A file could not be fetched or stored. Check the link and try again. |
+| `system_error` | A problem on our side. Try again later. |
+
+## Common codes
+
+**Request problems.** Nothing is charged.
+
+| HTTP | `code` | When |
+|---|---|---|
+| 400 | `invalid_request_body` | The body is not a JSON object. |
+| 400 | `invalid_input` | A field is missing or wrong. |
+| 400 | `invalid_webhook_url` | `webhook_url` is not a public `https` URL. |
+| 401 | `unauthorized` | Missing or wrong API key. |
+| 402 | `insufficient_credits` | Not enough credits. |
+| 403 | `forbidden` | Your key cannot call this endpoint. |
+| 404 | `trained_profile_not_found` | A profile is not yours or not ready. |
+| 422 | `image_dimensions_invalid` | The image could not be read. |
+| 429 | `rate_limited` | Too many requests. |
+
+**Generation problems.** Credits are returned, and the response includes `job_id`.
+
+| HTTP | `code` | When |
+|---|---|---|
+| 422 | `content_filtered` | The image or prompt was blocked. Try a different one. |
+| 422 | `provider_request_invalid` | The model could not process this input. |
+| 429 | `provider_rate_limited` | The model is busy. Try again in a moment. |
+| 500 | `generation_failed`, `generation_no_output` | No result was made. Try again. |
+| 502 | `provider_bad_gateway` | Generation is not working right now. Try again. |
+| 503 | `model_unavailable` | The model is temporarily unavailable. |
+| 504 | `generation_timeout` | The job took too long. |
+
+**Our side**
+
+| HTTP | `code` | When |
+|---|---|---|
+| 500 | `internal_error` | Something failed on our side. You are not charged, or the charge is returned. |
+| 503 | `service_unavailable` | Try again in a moment. |

@@ -28,15 +28,11 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Documentation",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "Get Started",
-            "pages": ["introduction", "quickstart", "authentication"]
-          },
-          {
-            "group": "Core Concepts",
-            "pages": ["response-format", "errors", "pagination"]
+            "group": "Overview",
+            "pages": ["index"]
           },
           {
             "group": "Guides",
@@ -48,12 +44,25 @@
               "guides/image-to-prompt",
               "guides/job-status"
             ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "resources/pricing",
+              "resources/errors",
+              "resources/support",
+              "resources/release-notes"
+            ]
           }
         ]
       },
       {
-        "tab": "API Reference",
+        "tab": "API reference",
         "groups": [
+          {
+            "group": "Get started",
+            "pages": ["api-reference/quickstart", "api-reference/authentication", "api-reference/async-requests"]
+          },
           {
             "group": "Recreate",
             "pages": [
@@ -91,15 +100,11 @@
           },
           {
             "group": "Jobs",
-            "pages": [
-              "openapi.yaml GET /api/v2/jobs/{job_id}"
-            ]
+            "pages": ["openapi.yaml GET /api/v2/jobs/{job_id}"]
           },
           {
             "group": "Profiles",
-            "pages": [
-              "openapi.yaml GET /api/v2/profiles"
-            ]
+            "pages": ["openapi.yaml GET /api/v2/profiles"]
           },
           {
             "group": "My data",
@@ -142,29 +147,106 @@
       {
         "header": "Product",
         "items": [
-          { "label": "GoStudio", "href": "https://www.gostudio.ai" },
-          { "label": "Support", "href": "mailto:support@gostudio.ai" }
+          {
+            "label": "GoStudio",
+            "href": "https://www.gostudio.ai"
+          },
+          {
+            "label": "Support",
+            "href": "mailto:support@gostudio.ai"
+          }
         ]
       },
       {
         "header": "Developers",
         "items": [
-          { "label": "Quickstart", "href": "/quickstart" },
-          { "label": "Authentication", "href": "/authentication" },
-          { "label": "Error Codes", "href": "/errors" }
+          {
+            "label": "Quickstart",
+            "href": "/api-reference/quickstart"
+          },
+          {
+            "label": "Authentication",
+            "href": "/api-reference/authentication"
+          },
+          {
+            "label": "Error Codes",
+            "href": "/resources/errors"
+          }
         ]
       }
     ]
   },
   "redirects": [
-    { "source": "/docs", "destination": "/introduction", "permanent": true },
-    { "source": "/docs/introduction", "destination": "/introduction", "permanent": true },
-    { "source": "/docs/quickstart", "destination": "/quickstart", "permanent": true },
-    { "source": "/docs/authentication", "destination": "/authentication", "permanent": true },
-    { "source": "/docs/response-format", "destination": "/response-format", "permanent": true },
-    { "source": "/docs/errors", "destination": "/errors", "permanent": true },
-    { "source": "/docs/pagination", "destination": "/pagination", "permanent": true },
-    { "source": "/docs/guides/:slug*", "destination": "/guides/:slug*", "permanent": true }
+    {
+      "source": "/docs",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/docs/introduction",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/introduction",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/docs/quickstart",
+      "destination": "/api-reference/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/api-reference/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/docs/authentication",
+      "destination": "/api-reference/authentication",
+      "permanent": true
+    },
+    {
+      "source": "/authentication",
+      "destination": "/api-reference/authentication",
+      "permanent": true
+    },
+    {
+      "source": "/docs/errors",
+      "destination": "/resources/errors",
+      "permanent": true
+    },
+    {
+      "source": "/errors",
+      "destination": "/resources/errors",
+      "permanent": true
+    },
+    {
+      "source": "/docs/response-format",
+      "destination": "/api-reference/async-requests",
+      "permanent": true
+    },
+    {
+      "source": "/response-format",
+      "destination": "/api-reference/async-requests",
+      "permanent": true
+    },
+    {
+      "source": "/docs/pagination",
+      "destination": "/api-reference/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/pagination",
+      "destination": "/api-reference/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/:slug*",
+      "destination": "/guides/:slug*",
+      "permanent": true
+    }
   ],
   "contextual": {
     "options": [
