@@ -46,57 +46,35 @@ paths:
       operationId: getJob
       summary: Get job (poll)
       description: >
-        Returns the state of a job. Use it after a `202`. Keep polling while
-        `status` is `pending` or `processing`. Poll every 5 seconds — the limit
-        is 15 requests a minute **per job**.
-
-
-        You can only see your own jobs.
+        Returns the current state of a job. Poll every 5 seconds while `status` is `pending` or `processing` (limit: 15 requests per minute per job). You can only access your own jobs.
       parameters:
         - name: job_id
           in: path
           required: true
-          description: The `job_id` you got from the generation request.
+          description: "ID of the job, returned by the generation request."
           schema:
             type: string
             format: uuid
             example: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
       responses:
         "200":
-          description: The job state.
+          description: "Current state of the job."
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobResponse"
-              examples:
-                completed:
-                  summary: Completed job
-                  value:
-                    status: 200
-                    data:
-                      job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
-                      status: completed
-                      tool_name: age_modify
-                      created_at: "2026-11-05T10:00:00Z"
-                      updated_at: "2026-11-05T10:00:21Z"
-                      output_urls:
-                        - https://example.com/result.jpg
-                failed:
-                  summary: Failed job
-                  value:
-                    status: 200
-                    data:
-                      job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
-                      status: failed
-                      tool_name: age_modify
-                      created_at: "2026-11-05T10:00:00Z"
-                      updated_at: "2026-11-05T10:00:21Z"
-                      error:
-                        type: provider_error
-                        code: generation_failed
-                        message: No picture was produced. Try again.
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  tool_name: age_modify
+                  created_at: "2026-11-05T10:00:00Z"
+                  updated_at: "2026-11-05T10:00:21Z"
+                  output_urls:
+                    - https://example.com/result.jpg
         "400":
-          description: "`invalid_input` — `job_id` is not a valid id."
+          description: "Invalid job ID."
           content:
             application/json:
               schema:
@@ -106,7 +84,7 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: "`job_not_found` — no such job for you."
+          description: "Job not found."
           content:
             application/json:
               schema:
@@ -120,9 +98,7 @@ paths:
       operationId: ageModifier
       summary: Age Modifier
       description: >
-        Makes the person in a photo look older or younger. The model is chosen
-        automatically from the age you ask for.
-
+        Makes the person in a photo look older or younger.
 
         **Cost:** 8 credits.
       requestBody:
@@ -165,8 +141,7 @@ paths:
       description: >
         Removes watermarks, logos, text and stamps from a photo.
 
-
-        **Cost:** `lite` 2, `pro` 2, `advance` 6 credits.
+        **Cost:** `lite` 2 · `pro` 2 · `advance` 6 credits.
       requestBody:
         required: true
         content:
@@ -206,11 +181,9 @@ paths:
       operationId: weightShift
       summary: Weight Shift
       description: >
-        Makes the person in a photo look leaner or fuller. The model is chosen
-        automatically. This endpoint does not run an NSFW check.
+        Makes the person in a photo look leaner or fuller.
 
-
-        **Cost:** 8 credits for every `weight_level` and every photo size.
+        **Cost:** 8 credits.
       requestBody:
         required: true
         content:
@@ -249,12 +222,9 @@ paths:
       operationId: groupPhoto
       summary: Group Photo
       description: >
-        Puts several people into one group photo that recreates the scene of a
-        reference photo.
+        Combines several people into one group photo that recreates the scene of a reference photo.
 
-
-        **Cost:** `low` 8, `medium` 9, `high` 26 credits. The price is the same
-        for 2 or 20 people photos.
+        **Cost:** `low` 8 · `medium` 9 · `high` 26 credits, regardless of the number of people.
       requestBody:
         required: true
         content:
@@ -295,17 +265,9 @@ paths:
       operationId: imageCreate
       summary: Image create
       description: >
-        Makes an image from a prompt. Create takes no images: an
-        `input_image_urls` field sent here is ignored. Use
-        Image edit to change images.
+        Creates an image from a text prompt.
 
-
-        `model_id` comes from Image models
-        and is the same in the request, the reply and the catalog. Sizes are
-        `1K`, `2K` or `4K`.
-
-
-        **Cost:** per image, by model and quality or resolution (2–30 credits).
+        **Cost:** 2–30 credits per image, depending on the model and its quality or resolution.
       requestBody:
         required: true
         content:
@@ -345,11 +307,9 @@ paths:
       operationId: imageEdit
       summary: Image edit
       description: >
-        Changes one or more images with a prompt. Takes the same models as
-        Image create.
+        Edits one or more images using a text prompt.
 
-
-        **Cost:** the same as Image create.
+        **Cost:** same as Image create.
       requestBody:
         required: true
         content:
@@ -389,13 +349,7 @@ paths:
       operationId: imageModels
       summary: Image models
       description: >
-        Lists each image model's `aspect_ratios`, `resolutions` (sizes) or
-        `qualities` (tiers), `max_input_image_urls` and `credits` per size or
-        per quality.
-
-
-        Public (no token). Cached for 60 seconds with an `ETag`, and answered
-        from memory with no database read.
+        Lists the available image models with their supported aspect ratios, sizes or qualities, input limits and credit cost. Public — no API key needed.
       security: []
       responses:
         "200":
@@ -411,20 +365,9 @@ paths:
       operationId: videoCreate
       summary: Video create
       description: >
-        Text to video. Only models that can run from a prompt alone are
-        offered. Create reads no frames; use
-        Video keyframes for those.
+        Creates a video from a text prompt. Always returns `202`; fetch the result from `poll_url` or use a `webhook_url`.
 
-
-        Video never waits inside the request: every call answers `202` with
-        `job_id` and `poll_url`. Poll Get job
-        or send a `webhook_url`. `model_id` comes from
-        Video models.
-
-
-        **Cost:** per second, by model and resolution (3–156 credits per second).
-        The total is rounded up to a whole credit. Audio does not change the
-        price.
+        **Cost:** 3–156 credits per second, depending on the model and resolution. Audio does not change the price.
       requestBody:
         required: true
         content:
@@ -463,17 +406,9 @@ paths:
       operationId: videoKeyframes
       summary: Video keyframes
       description: >
-        Makes a video that starts from a first frame, and optionally ends on a
-        last frame. Always answers `202`; poll
-        Get job or send a `webhook_url`.
+        Creates a video from a first frame, and optionally a last frame. Always returns `202`.
 
-
-        MiniMax H3, MiniMax H3 Lite and MiniMax H3 Highspeed list no
-        `aspect_ratio` for keyframes (their video follows the start frame), so a
-        keyframes call with an `aspect_ratio` for them returns `400`.
-
-
-        **Cost:** per second, by model and resolution (3–156 credits per second).
+        **Cost:** 3–156 credits per second, depending on the model and resolution.
       requestBody:
         required: true
         content:
@@ -511,12 +446,9 @@ paths:
       operationId: videoReference
       summary: Video reference
       description: >
-        Makes a video guided by one or more reference images. Always answers
-        `202`; poll Get job or send a
-        `webhook_url`.
+        Creates a video guided by reference images. Always returns `202`.
 
-
-        **Cost:** per second, by model and resolution (4–28 credits per second).
+        **Cost:** 4–28 credits per second, depending on the model and resolution.
       requestBody:
         required: true
         content:
@@ -555,19 +487,9 @@ paths:
       operationId: videoEdit
       summary: Video edit
       description: >
-        Changes an existing video clip with a prompt. Always answers `202`; poll
-        Get job or send a `webhook_url`.
+        Edits an existing video clip using a text prompt. Always returns `202`. The price is based on the length of your clip.
 
-
-        There is no `duration`: the result follows the clip, and the job is
-        priced from the length we read from the file ourselves. The clip must
-        fit the model's `input_video_url` limits (seconds, side pixels, area)
-        and 100 MB. A clip outside them returns `400` before any job or charge.
-        On edit, `audio` defaults to on for every model with an audio option.
-
-
-        **Cost:** per second of your clip, by model and resolution (3–56 credits
-        per second).
+        **Cost:** 3–56 credits per second of your clip, depending on the model and resolution.
       requestBody:
         required: true
         content:
@@ -605,14 +527,7 @@ paths:
       operationId: videoModels
       summary: Video models
       description: >
-        Lists the video models grouped by mode (`create`, `keyframes`,
-        `reference`, `edit`), each with its `aspect_ratios`, `durations`,
-        `default_duration`, `resolutions`, `audio_supported`, and the mode's own
-        limits.
-
-
-        Public (no token). Cached for 60 seconds with an `ETag`, and answered
-        from memory with no database read.
+        Lists the available video models for each mode (`create`, `keyframes`, `reference`, `edit`) with their aspect ratios, durations, resolutions, audio support and limits. Public — no API key needed.
       security: []
       responses:
         "200":
@@ -628,12 +543,9 @@ paths:
       operationId: recreate
       summary: Recreate
       description: >
-        Restyles a photo to match a reference photo. Optionally keeps the
-        identity of your trained profiles.
+        Restyles a photo to match a reference photo, optionally keeping the identity of your trained profiles.
 
-
-        **Cost:** 10 credits per image (`num_output_images` 1–4 = 10, 20, 30,
-        40).
+        **Cost:** 10 credits per image.
       requestBody:
         required: true
         content:
@@ -676,26 +588,9 @@ paths:
       operationId: profilePhoto
       summary: Profile Photo
       description: >
-        Creates a new photo of your trained profiles from a text prompt. **The
-        people go inside the prompt**, written as `[[profile_id]]` with a
-        `profile_id` from List profiles.
-        There is no separate `profile_ids` field.
+        Creates a new photo of your trained profiles from a text prompt. Reference each person in the prompt as `[[profile_id]]` (IDs come from List profiles). At least one profile is required, and every profile must be one of your ready profiles; otherwise the request fails with `404 trained_profile_not_found` and nothing is charged.
 
-
-        - Write each person as `[[<profile_id>]]`, for example
-          `"[[b5ccefdfcaca425dbcb2abd6a58e9a09]] on a beach at sunset"`.
-        - Several people: one token each, anywhere in the text.
-        - At least one token is required. A prompt without one fails with
-          `400 invalid_input`.
-        - Every token must be one of your ready profiles. If any one is not
-          (unknown, another user's, not ready, deleted), the whole request fails
-          with `404 trained_profile_not_found`, and nothing is generated or
-          charged.
-        - The literal text `[[profile_id]]` is a placeholder, not a profile.
-
-
-        **Cost:** per image, by model and resolution (10–25 credits). Multiply
-        by `num_output_images`.
+        **Cost:** 10–25 credits per image, depending on the model and resolution.
       requestBody:
         required: true
         content:
@@ -736,13 +631,9 @@ paths:
       operationId: recreateGroup
       summary: Recreate Group
       description: >
-        Recreates the scene of a reference photo with 2 to 10 of your trained
-        profiles. The first id in `profile_ids` is person 1 in the reference,
-        the second is person 2, and so on.
+        Recreates the scene of a reference photo with 2 to 10 of your trained profiles. The first ID in `profile_ids` is person 1 in the reference photo, the second is person 2, and so on.
 
-
-        **Cost:** per image, by model and resolution (10–25 credits). Multiply
-        by `num_output_images`.
+        **Cost:** 10–25 credits per image, depending on the model and resolution.
       requestBody:
         required: true
         content:
@@ -785,10 +676,7 @@ paths:
       operationId: listProfiles
       summary: List profiles
       description: >
-        Lists your trained profiles that are ready to use. Each has a
-        `profile_id`: send it in `profile_ids` (Recreate, Recreate Group) or as
-        `[[profile_id]]` in the prompt (Profile Photo). Profiles are created in
-        GoStudio.
+        Lists your trained profiles that are ready to use. Use a profile's `profile_id` in `profile_ids` (Recreate, Recreate Group) or as `[[profile_id]]` in a Profile Photo prompt. Profiles are created in GoStudio.
       responses:
         "200":
           description: Your ready profiles.
@@ -796,16 +684,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProfilesResponse"
-              example:
-                status: 200
-                data:
-                  profiles:
-                    - profile_id: b5ccefdfcaca425dbcb2abd6a58e9a09
-                      name: Alex
-                      gender: male
-                      cover_url: https://example.com/cover.jpg
-                      status: ready
-                      created_at: "2026-10-01T09:00:00Z"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -817,9 +695,9 @@ paths:
     get:
       tags: [My data]
       operationId: getCreditBalance
-      summary: Credit balance
+      summary: Get credit balance
       description: >
-        Returns how many credits you have now. You only ever see your own data.
+        Returns your current credit balance.
       responses:
         "200":
           description: Your current credit balance.
@@ -844,20 +722,20 @@ paths:
     get:
       tags: [My data]
       operationId: listCreditHistory
-      summary: Credit history
+      summary: Get credit history
       description: >
-        Lists every credit purchase, charge and refund on your account. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
+        Lists your credit purchases, charges and refunds.
+
+        Results are paged: pass `next_cursor` from the response as `cursor` to get the next page. Unknown filter values are ignored.
       parameters:
         - name: type
           in: query
-          description: >
-            Only these kinds of entries, separated by commas: `purchase`, `deduction`, `debit`, `refund`.
+          description: "Filter by entry type. Comma-separated: `purchase`, `deduction`, `debit`, `refund`."
           schema:
             type: string
         - name: event
           in: query
-          description: >
-            Only these events, separated by commas, for example `image_generation`, `image_edit`, `video_edit`, `ai_tools`, `ai_editor`, `pack_purchase`, `addon_purchase`, `model_training`, `credit_expiry`, `user_signup`.
+          description: "Filter by event, comma-separated (for example `image_generation`, `pack_purchase`, `model_training`)."
           schema:
             type: string
         - $ref: "#/components/parameters/Limit"
@@ -883,50 +761,45 @@ paths:
     get:
       tags: [My data]
       operationId: listGenerations
-      summary: List generations
+      summary: Get generations
       description: >
-        Lists the generations you made (images and videos, from the web, the apps and the API). Each one has its outputs and the files it started from. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
+        Lists the images and videos you generated, with their outputs and input files.
+
+        Results are paged: pass `next_cursor` from the response as `cursor` to get the next page. Unknown filter values are ignored.
       parameters:
         - name: status
           in: query
-          description: >
-            Only these states, separated by commas: `pending`, `processing`, `completed`, `failed`, `abandoned`.
+          description: "Filter by status. Comma-separated: `pending`, `processing`, `completed`, `failed`, `abandoned`."
           schema:
             type: string
         - name: media_type
           in: query
-          description: >
-            `image`, `video` or `audio`, separated by commas.
+          description: "Filter by media type. Comma-separated: `image`, `video`, `audio`."
           schema:
             type: string
         - name: flow_type
           in: query
-          description: >
-            Only these kinds, separated by commas: `ai_editor`, `ai_image`, `ai_canvas`, `ai_video`, `ai_video_tools`, `ai_tools`, `recreate_photo`, `image_generation`, `pack_generation`, `global`.
+          description: "Filter by the feature that created the item, comma-separated (for example `ai_tools`, `ai_image`, `ai_video`, `recreate_photo`)."
           schema:
             type: string
         - name: tool_name
           in: query
-          description: >
-            Only these tools, separated by commas, for example `age_modify`, `ai_image`, `ai_video`.
+          description: "Filter by tool, comma-separated (for example `age_modify`, `ai_image`, `ai_video`)."
           schema:
             type: string
         - name: profile_id
           in: query
-          description: >
-            Only generations made with this trained profile.
+          description: "Only items made with this trained profile."
           schema:
             type: integer
         - name: search
           in: query
-          description: >
-            Text to look for in what you typed as the prompt.
+          description: "Search the prompt text."
           schema:
             type: string
         - name: is_liked
           in: query
-          description: >
-            `true` or `false`.
+          description: "Filter by liked items: `true` or `false`."
           schema:
             type: boolean
         - $ref: "#/components/parameters/Limit"
@@ -952,15 +825,14 @@ paths:
     get:
       tags: [My data]
       operationId: getGeneration
-      summary: Get a generation
+      summary: Get generation details
       description: >
-        Returns one of your generations, in the same shape as an item of the list. You only ever see your own data.
+        Returns one of your generations.
       parameters:
         - name: id
           in: path
           required: true
-          description: >
-            The generation id: the `job_id` you got when you made it.
+          description: "ID of the generation (the `job_id` returned when it was created)."
           schema:
             type: string
             format: uuid
@@ -994,39 +866,36 @@ paths:
     get:
       tags: [My data]
       operationId: listImages
-      summary: List images
+      summary: Get generated images
       description: >
-        Lists the pictures and videos your generations made. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
+        Lists the images and videos your generations produced.
+
+        Results are paged: pass `next_cursor` from the response as `cursor` to get the next page. Unknown filter values are ignored.
       parameters:
         - name: media_type
           in: query
-          description: >
-            `image`, `video` or `audio`, separated by commas.
+          description: "Filter by media type. Comma-separated: `image`, `video`, `audio`."
           schema:
             type: string
         - name: is_liked
           in: query
-          description: >
-            `true` or `false`.
+          description: "Filter by liked items: `true` or `false`."
           schema:
             type: boolean
         - name: is_deleted
           in: query
-          description: >
-            Send `true` to list the ones you deleted.
+          description: "Set to `true` to list deleted items."
           schema:
             type: boolean
             default: false
         - name: tool_name
           in: query
-          description: >
-            Only from these tools, separated by commas.
+          description: "Filter by tool, comma-separated (for example `age_modify`, `ai_image`, `ai_video`)."
           schema:
             type: string
         - name: flow_type
           in: query
-          description: >
-            Only from these kinds of generation, separated by commas, for example `ai_tools`, `ai_editor`.
+          description: "Filter by the feature that created the item, comma-separated (for example `ai_tools`, `ai_image`, `ai_video`, `recreate_photo`)."
           schema:
             type: string
         - $ref: "#/components/parameters/Limit"
@@ -1052,15 +921,14 @@ paths:
     get:
       tags: [My data]
       operationId: getImage
-      summary: Get an image
+      summary: Get generated image
       description: >
-        Returns one of your images or videos. You only ever see your own data. Someone else's id returns the same 404 as an id that does not exist.
+        Returns one of your generated images or videos.
       parameters:
         - name: id
           in: path
           required: true
-          description: >
-            The image id from List images or a generation's `images`.
+          description: "ID of the image."
           schema:
             type: integer
       responses:
@@ -1093,38 +961,35 @@ paths:
     get:
       tags: [My data]
       operationId: listUploads
-      summary: List uploads
+      summary: Get uploaded images
       description: >
-        Lists the files you uploaded, and the input files your generations used. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
+        Lists the files you uploaded and the input files your generations used.
+
+        Results are paged: pass `next_cursor` from the response as `cursor` to get the next page. Unknown filter values are ignored.
       parameters:
         - name: purpose
           in: query
-          description: >
-            `training` or `input`, separated by commas.
+          description: "Filter by purpose. Comma-separated: `training`, `input`."
           schema:
             type: string
         - name: upload_source
           in: query
-          description: >
-            How it was uploaded: `direct`, `qr_upload` or `url`, separated by commas.
+          description: "Filter by how the file was uploaded. Comma-separated: `direct`, `qr_upload`, `url`."
           schema:
             type: string
         - name: media_type
           in: query
-          description: >
-            `image`, `video` or `audio`, separated by commas.
+          description: "Filter by media type. Comma-separated: `image`, `video`, `audio`."
           schema:
             type: string
         - name: profile_id
           in: query
-          description: >
-            Only files of this trained profile.
+          description: "Only items made with this trained profile."
           schema:
             type: integer
         - name: is_deleted
           in: query
-          description: >
-            Send `true` to list the ones you deleted.
+          description: "Set to `true` to list deleted items."
           schema:
             type: boolean
             default: false
@@ -1151,15 +1016,14 @@ paths:
     get:
       tags: [My data]
       operationId: getUpload
-      summary: Get an upload
+      summary: Get uploaded image
       description: >
-        Returns one of your uploaded files. You only ever see your own data. Someone else's id returns the same 404 as an id that does not exist.
+        Returns one of your uploaded files.
       parameters:
         - name: id
           in: path
           required: true
-          description: >
-            The upload id from List uploads.
+          description: "ID of the upload."
           schema:
             type: integer
       responses:
@@ -1206,7 +1070,7 @@ components:
     Limit:
       name: limit
       in: query
-      description: How many items per page, 1 to 100.
+      description: "Number of items per page."
       schema:
         type: integer
         minimum: 1
@@ -1215,13 +1079,13 @@ components:
     Cursor:
       name: cursor
       in: query
-      description: The `next_cursor` of the previous page. Leave it out for the first page.
+      description: "Cursor for the next page. Use `next_cursor` from the previous response; omit it for the first page."
       schema:
         type: string
     Sort:
       name: sort
       in: query
-      description: "`created_at.desc` (newest first) or `created_at.asc` (oldest first)."
+      description: "Sort order by creation time."
       schema:
         type: string
         enum: [created_at.desc, created_at.asc]
@@ -1229,42 +1093,49 @@ components:
     Since:
       name: since
       in: query
-      description: Only items created at or after this time (ISO 8601, for example `2026-11-01T00:00:00Z`).
+      description: "Only items created at or after this time (ISO 8601)."
       schema:
         type: string
         format: date-time
     Until:
       name: until
       in: query
-      description: Only items created at or before this time (ISO 8601).
+      description: "Only items created at or before this time (ISO 8601)."
       schema:
         type: string
         format: date-time
 
   responses:
     GenerationCompleted:
-      description: >
-        The job finished inside the request (`mode: sync`). The pictures are in
-        `output_urls`.
+      description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GenerationCompletedResponse"
+          example:
+            status: 200
+            data:
+              job_id: "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
+              status: "completed"
+              output_urls:
+                - "https://example.com/result.jpg"
+              credits_deducted: 8
+              credit_balance: 112
     GenerationAccepted:
-      description: >
-        The job was accepted and is still running (`mode: async`, or `sync`
-        that ran past the wait limit). Fetch the result from `poll_url`. Do
-        **not** send the request again — you would pay twice.
+      description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/GenerationAcceptedResponse"
+          example:
+            status: 202
+            data:
+              job_id: "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
+              status: "processing"
+              credits_deducted: 8
+              poll_url: "https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
     BadRequest:
-      description: >
-        The request is wrong and nothing was charged. `invalid_request_body`
-        (not a JSON object), `invalid_input` (a field is missing or wrong — the
-        `message` names it), `missing_required_field`, `invalid_model_key`
-        (the model id is not valid for this tool) or `invalid_webhook_url`.
+      description: "Invalid request. Nothing was charged."
       content:
         application/json:
           schema:
@@ -1272,11 +1143,11 @@ components:
           example:
             status: 400
             error:
-              type: validation_error
-              code: invalid_input
-              message: "profile_ids: Array must contain at least 2 element(s)"
+              type: "validation_error"
+              code: "invalid_input"
+              message: "image_url: Required"
     Unauthorized:
-      description: "`unauthorized` — missing or wrong token."
+      description: "Missing or invalid API key."
       content:
         application/json:
           schema:
@@ -1284,11 +1155,11 @@ components:
           example:
             status: 401
             error:
-              type: authentication_error
-              code: unauthorized
-              message: Missing or invalid token.
+              type: "authentication_error"
+              code: "unauthorized"
+              message: "Missing or invalid token."
     InsufficientCredits:
-      description: "`insufficient_credits` — not enough credits."
+      description: "Not enough credits."
       content:
         application/json:
           schema:
@@ -1296,59 +1167,71 @@ components:
           example:
             status: 402
             error:
-              type: billing_error
-              code: insufficient_credits
-              message: You don't have enough credits.
+              type: "billing_error"
+              code: "insufficient_credits"
+              message: "You don't have enough credits."
     Forbidden:
-      description: "`forbidden` — your token is not allowed on this endpoint."
+      description: "This API key cannot use this endpoint."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 403
+            error:
+              type: "permission_error"
+              code: "forbidden"
+              message: "You don't have permission for this action."
     ProfileNotFound:
-      description: >
-        `trained_profile_not_found` — a profile is not one of your ready
-        profiles. The `message` names it. Nothing is generated or charged.
+      description: "A profile ID is not one of your ready profiles. Nothing was generated or charged."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 404
+            error:
+              type: "not_found_error"
+              code: "trained_profile_not_found"
+              message: "Trained profile not found."
     GenerationFailed:
-      description: >
-        The picture could not be made. Credits are returned and the response
-        includes `job_id`. Codes: `content_filtered` (the image or text was
-        blocked), `provider_request_invalid`, `image_dimensions_invalid` (the
-        photo cannot be read) and `output_too_large`.
+      description: "The result could not be generated. Credits are returned."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
           example:
             status: 422
-            job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+            job_id: "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
             error:
-              type: provider_error
-              code: content_filtered
-              message: The image or text was blocked. Try a different one.
+              type: "provider_error"
+              code: "content_filtered"
+              message: "We couldn't generate this image. Please try a different prompt or image."
     RateLimited:
-      description: >
-        `rate_limited` — more than 30 requests a minute per endpoint per user
-        (15 a minute per job for job status). `provider_rate_limited` means our
-        provider is busy; try again in a moment.
+      description: "Too many requests. Wait a moment and try again."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 429
+            error:
+              type: "rate_limit_error"
+              code: "rate_limited"
+              message: "You're doing that too often. Please wait a moment."
     ServerError:
-      description: >
-        A problem on our side or the provider's. Credits are returned. Codes:
-        `generation_failed`, `generation_no_output` (500), `internal_error`,
-        `db_write_failed`, `credit_deduct_failed` (500), `provider_bad_gateway`
-        (502), `model_unavailable` (503) and `generation_timeout` (504).
+      description: "A server or provider error occurred. Credits are returned."
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+          example:
+            status: 500
+            job_id: "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
+            error:
+              type: "system_error"
+              code: "internal_error"
+              message: "Something went wrong on our end."
 
   schemas:
     ErrorResponse:
@@ -1357,188 +1240,182 @@ components:
       properties:
         status:
           type: integer
-          example: 402
+          description: "HTTP status code."
         job_id:
           type: string
           format: uuid
-          description: Present when the error happened after the job was created.
+          description: "ID of the job. Present only when the error occurred after the job was created."
         error:
           type: object
           required: [type, code, message]
+          description: "Details of the error."
           properties:
             type:
               type: string
-              description: The kind of error.
-              enum:
-                - validation_error
-                - authentication_error
-                - permission_error
-                - billing_error
-                - not_found_error
-                - rate_limit_error
-                - provider_error
-                - system_error
+              description: "Category of the error."
+              enum: [validation_error, authentication_error, permission_error, billing_error, not_found_error, rate_limit_error, provider_error, system_error]
             code:
               type: string
-              example: insufficient_credits
+              description: "Machine-readable error code."
             message:
               type: string
-              example: You don't have enough credits.
+              description: "Human-readable explanation."
 
     GenerationCompletedResponse:
       type: object
       properties:
         status:
           type: integer
-          example: 200
+          description: "HTTP status code."
         data:
           type: object
+          description: "The finished job."
           properties:
             job_id:
               type: string
               format: uuid
-              example: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+              description: "Unique ID of the job."
             status:
               type: string
-              example: completed
+              enum: [completed]
+              description: "State of the job."
             output_urls:
               type: array
               items:
                 type: string
                 format: uri
-              example:
-                - https://example.com/result.jpg
+              description: "URLs of the generated files."
             model_id:
               type: string
-              description: >
-                The model or tier you used. Returned by Watermark Remover,
-                Image create/edit, Profile Photo and Recreate Group.
+              description: "Model or tier used. Returned by Watermark Remover, Image create and edit, Profile Photo and Recreate Group."
             credits_deducted:
               type: integer
-              example: 8
+              description: "Credits charged for this job."
             credit_balance:
               type: integer
-              example: 112
+              description: "Your remaining credits."
 
     GenerationAcceptedResponse:
       type: object
       properties:
         status:
           type: integer
-          example: 202
+          description: "HTTP status code."
         data:
           type: object
+          description: "The accepted job."
           properties:
             job_id:
               type: string
               format: uuid
-              example: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+              description: "Unique ID of the job."
             status:
               type: string
-              example: processing
+              enum: [pending, processing]
+              description: "State of the job."
             model_id:
               type: string
-              description: >
-                The model or tier you used. Returned by Watermark Remover,
-                Image create/edit, Profile Photo and Recreate Group.
+              description: "Model or tier used. Returned by Watermark Remover, Image create and edit, Profile Photo and Recreate Group."
             credits_deducted:
               type: integer
-              example: 8
+              description: "Credits charged for this job. Returned automatically if the job fails."
             poll_url:
               type: string
               format: uri
-              example: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+              description: "URL to poll for the result. See Get job."
 
     JobResponse:
       type: object
       properties:
         status:
           type: integer
-          example: 200
+          description: "HTTP status code."
         data:
           type: object
           properties:
             job_id:
               type: string
               format: uuid
+              description: "Unique ID of the job."
             status:
               type: string
               enum: [pending, processing, completed, failed]
+              description: "Current state of the job. Keep polling while it is `pending` or `processing`."
             tool_name:
               type: string
-              enum:
-                - age_modify
-                - watermark_remover
-                - weight_shift
-                - group_photo
-                - recreate
-                - ai_image
-                - ai_video
+              enum: [age_modify, watermark_remover, weight_shift, group_photo, recreate, ai_image, ai_video]
+              description: "Tool that created the job."
             created_at:
               type: string
               format: date-time
+              description: "When the job was created."
             updated_at:
               type: string
               format: date-time
+              description: "When the job last changed."
             output_urls:
               type: array
-              description: Only when `status` is `completed`.
               items:
                 type: string
                 format: uri
+              description: "URLs of the generated files. Present only when `status` is `completed`."
             error:
               type: object
-              description: Only when `status` is `failed`.
+              description: "Present only when `status` is `failed`."
               properties:
                 type:
                   type: string
+                  description: "Category of the error."
                 code:
                   type: string
+                  description: "Machine-readable error code."
                 message:
                   type: string
+                  description: "Human-readable explanation."
 
     ProfilesResponse:
       type: object
       properties:
         status:
           type: integer
-          example: 200
+          description: "HTTP status code."
         data:
           type: object
           properties:
             profiles:
               type: array
+              description: "Your trained profiles that are ready to use."
               items:
                 type: object
                 properties:
                   profile_id:
                     type: string
-                    example: b5ccefdfcaca425dbcb2abd6a58e9a09
+                    description: "ID to use in `profile_ids` or as `[[profile_id]]` in a prompt."
                   name:
                     type: string
-                    example: Alex
+                    description: "Profile name."
                   gender:
                     type: string
-                    example: male
+                    description: "Gender set on the profile."
                   cover_url:
                     type: string
                     format: uri
+                    description: "Cover image of the profile."
                   status:
                     type: string
-                    example: ready
+                    description: "Profile state. Only `ready` profiles are listed."
                   created_at:
                     type: string
                     format: date-time
+                    description: "When the profile was created."
 
     ModelCatalogResponse:
       type: object
-      description: >
-        The model catalog. Each model lists what it supports, such as
-        `aspect_ratios`, `resolutions`, `qualities`, `durations` and `credits`.
+      description: "The model catalog. Each model lists what it supports, such as aspect ratios, resolutions or qualities, durations and credit cost."
       properties:
         status:
           type: integer
-          example: 200
+          description: "HTTP status code."
         data:
           type: object
           additionalProperties: true
@@ -1546,237 +1423,235 @@ components:
     WebhookUrl:
       type: string
       format: uri
-      description: >
-        Optional public `https` URL on port 443, with no username or password.
-        We `POST` once when the job finishes, and retry up to 5 times within 2
-        minutes if the notice fails. Redirects are not followed.
+      description: "Optional HTTPS URL that is notified when the job finishes."
 
     AgeModifierRequest:
       type: object
-      required: [image_url]
+      required: ["image_url"]
       properties:
         image_url:
           type: string
           format: uri
-          description: Public `http` or `https` URL of the photo.
+          description: "Public URL of the photo (`http` or `https`)."
         target_age:
           type: integer
+          default: 30
           minimum: 1
           maximum: 100
-          default: 30
-          description: Age to show, 1 to 100.
+          description: "Age to show the person at."
         gender:
           type: string
-          enum: [none, male, female, other]
-          default: none
+          enum: ["none", "male", "female", "other"]
+          default: "none"
+          description: "Gender of the person in the photo."
         age_mode:
           type: string
-          enum: [selected_age, age_progression]
-          default: selected_age
+          enum: ["selected_age", "age_progression"]
+          default: "selected_age"
+          description: "How age is applied. `selected_age` ages the person to `target_age`; `age_progression` applies a natural aging effect."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: sync
-          description: >
-            `sync` waits for the pictures, up to 270 seconds. `async` returns a
-            `202` with a `job_id` at once.
+          enum: ["sync", "async"]
+          default: "sync"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     WatermarkRemoverRequest:
       type: object
-      required: [image_url]
+      required: ["image_url"]
       properties:
         image_url:
           type: string
           format: uri
-          description: Public `http` or `https` URL of the photo.
+          description: "Public URL of the photo (`http` or `https`)."
         model_id:
           type: string
-          enum: [lite, pro, advance]
-          default: lite
-          description: The quality tier.
+          enum: ["lite", "pro", "advance"]
+          default: "lite"
+          description: "Quality tier. `advance` costs more credits than `lite` and `pro`."
         instructions:
           type: string
-          description: >
-            Tells the model what to remove (for example "corner logo"). Used by
-            `pro` and `advance`; ignored for `lite`.
+          description: "What to remove, for example `corner logo`. Used by `pro` and `advance`; ignored by `lite`."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: sync
+          enum: ["sync", "async"]
+          default: "sync"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     WeightShiftRequest:
       type: object
-      required: [image_url, weight_level]
+      required: ["image_url", "weight_level"]
       properties:
         image_url:
           type: string
           format: uri
-          description: Public `http` or `https` URL of the photo.
+          description: "Public URL of the photo (`http` or `https`)."
         weight_level:
           type: integer
           enum: [-50, -25, -10, 10, 25, 50]
-          description: >
-            How much to change: `-50`, `-25`, `-10` (leaner) or `10`, `25`, `50`
-            (fuller). Any other value, including `0`, returns `400 invalid_input`.
+          description: "How much to change the person's build. Negative values make them leaner; positive values make them fuller."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: sync
+          enum: ["sync", "async"]
+          default: "sync"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     GroupPhotoRequest:
       type: object
-      required: [input_image_urls, reference_image_url]
+      required: ["input_image_urls", "reference_image_url"]
       properties:
         input_image_urls:
           type: array
-          minItems: 2
-          maxItems: 20
           items:
             type: string
             format: uri
-          description: 2 to 20 photos of the people. Public `http` or `https` URLs.
+          minItems: 2
+          maxItems: 20
+          description: "Photos of the people to include, 2 to 20. Public `http` or `https` URLs."
         reference_image_url:
           type: string
           format: uri
-          description: The photo whose scene should be recreated.
+          description: "Photo whose scene is recreated."
         instructions:
           type: string
-          description: Extra wishes, for example "everyone smiling".
+          description: "Optional extra guidance, for example `everyone smiling`."
         aspect_ratio:
           type: string
-          enum: [auto, "1:1", "3:4", "9:16", "4:3", "16:9"]
-          default: auto
-          description: "`auto` uses the shape of the reference photo."
+          enum: ["auto", "1:1", "3:4", "9:16", "4:3", "16:9"]
+          default: "auto"
+          description: "Shape of the output image. `auto` matches the reference photo."
         resolution:
           type: string
-          enum: [low, medium, high]
-          default: low
+          enum: ["low", "medium", "high"]
+          default: "low"
+          description: "Output quality. Higher resolutions cost more credits."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: async
+          enum: ["sync", "async"]
+          default: "async"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     ImageCreateRequest:
       type: object
-      required: [prompt]
+      required: ["prompt"]
       properties:
         prompt:
           type: string
-          description: What the image should show.
+          description: "Description of the image to create."
         aspect_ratio:
           type: string
-          default: auto
-          description: >
-            `auto` (or `custom`, the same) lets the model pick the shape from
-            the prompt, for models with `create_accepts_auto_aspect_ratio`; or
-            one of the model's `aspect_ratios`.
+          default: "auto"
+          description: "Shape of the output image. Use `auto` to let the model choose from the prompt (supported models only), or a value from the model's `aspect_ratios` in Image models."
         model_id:
           type: string
-          default: gpt-image-2-6-sunburst
-          description: An id from Image models.
+          default: "gpt-image-2-6-sunburst"
+          description: "Image model to use. Available IDs and their options are listed in Image models."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
-          default: 1K
-          description: >
-            For a model that lists `resolutions` (such as `nano-banana-2.1`).
-            Ignored by a model with one fixed size. A model that lists
-            `qualities` refuses it.
+          default: "1K"
+          description: "Output size, for models that offer sizes. Not accepted by models that use `quality`."
         quality:
           type: string
-          enum: [low, medium, high, xhigh, max]
-          description: >
-            For a model that lists `qualities` (the GPT image models). Default
-            `medium` (`low` for `gpt-image-2`). GPT Image 2.6
-            (`gpt-image-2-6-sunburst`, `gpt-image-2-6-flare`) also takes
-            `xhigh` and `max`. A model without `qualities` refuses it.
+          enum: ["low", "medium", "high", "xhigh", "max"]
+          description: "Output quality, for models that offer quality tiers. `xhigh` and `max` are available on GPT Image 2.6 models only. Not accepted by models that use `resolution`. Default: `medium` (`low` for `gpt-image-2`)."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: sync
+          enum: ["sync", "async"]
+          default: "sync"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     ImageEditRequest:
       type: object
-      required: [prompt, input_image_urls]
+      required: ["prompt", "input_image_urls"]
       properties:
         prompt:
           type: string
-          description: What to change.
+          description: "Description of the changes to make."
         input_image_urls:
           type: array
-          minItems: 1
           items:
             type: string
             format: uri
-          description: >
-            1 up to the model's `max_input_image_urls`. Public `http` or
-            `https` URLs.
+          minItems: 1
+          description: "Images to edit. Public `http` or `https` URLs, from 1 up to the model's `max_input_image_urls`."
         aspect_ratio:
           type: string
-          default: auto
-          description: >
-            `auto` (or `custom`, the same) keeps the shape of the input image;
-            or one of the model's `aspect_ratios`.
+          default: "auto"
+          description: "Shape of the output image. Use `auto` to keep the shape of the input image, or a value from the model's `aspect_ratios` in Image models."
         model_id:
           type: string
-          default: gpt-image-2-6-sunburst
-          description: An id from Image models.
+          default: "gpt-image-2-6-sunburst"
+          description: "Image model to use. Available IDs and their options are listed in Image models."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
-          default: 1K
+          default: "1K"
+          description: "Output size, for models that offer sizes. Not accepted by models that use `quality`."
         quality:
           type: string
-          enum: [low, medium, high, xhigh, max]
+          enum: ["low", "medium", "high", "xhigh", "max"]
+          description: "Output quality, for models that offer quality tiers. `xhigh` and `max` are available on GPT Image 2.6 models only. Not accepted by models that use `resolution`. Default: `medium` (`low` for `gpt-image-2`)."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: sync
+          enum: ["sync", "async"]
+          default: "sync"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     VideoCreateRequest:
       type: object
-      required: [prompt]
+      required: ["prompt"]
       properties:
         prompt:
           type: string
-          description: What the video should show.
+          description: "Description of the video."
         model_id:
           type: string
-          description: An id from Video models.
+          description: "Video model to use. Available IDs for each mode are listed in Video models. Defaults to the default model of the mode."
         aspect_ratio:
           type: string
-          description: >
-            Optional. When none is sent, the model's `default_aspect_ratio` from
-            the catalog is used. A model that lists no ratios rejects the field.
+          description: "Shape of the video. Accepted values depend on the model; defaults to the model's default."
         duration:
           type: integer
-          description: Whole seconds from the model's list. The default is shown in the catalog.
+          description: "Length in seconds. Accepted values and the default depend on the model."
         resolution:
           type: string
-          description: Optional, from the model's list.
+          description: "Output resolution. Accepted values depend on the model."
         audio:
           type: boolean
-          description: Only for a model with an audio option.
+          description: "Generate audio. Only for models with an audio option."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [async]
-          description: >
-            Video always runs in the background. Only `"async"`, or leave it
-            out; any other value returns `400`.
+          enum: ["async"]
+          default: "async"
+          description: "Videos always run in the background. Only `async` is accepted."
 
     VideoKeyframesRequest:
       allOf:
@@ -1787,14 +1662,11 @@ components:
             start_image_url:
               type: string
               format: uri
-              description: URL of the first frame.
+              description: "URL of the first frame."
             end_image_url:
               type: string
               format: uri
-              description: >
-                Required by some models, optional for others, rejected by the
-                rest (`end_image_url` in the catalog: `required`, `optional` or
-                `not_accepted`).
+              description: "URL of the last frame. Required, optional or not accepted, depending on the model."
 
     VideoReferenceRequest:
       allOf:
@@ -1808,171 +1680,179 @@ components:
               items:
                 type: string
                 format: uri
-              description: 1 up to the model's `max_reference_image_urls`.
+              description: "Reference images that guide the video, from 1 up to the model's `max_reference_image_urls`."
 
     VideoEditRequest:
       type: object
-      required: [prompt, input_video_url]
-      description: Video edit takes no `duration`; it returns `400` if you send one.
+      description: "The result follows the length of the clip, so no `duration` is accepted."
+      required: ["prompt", "input_video_url"]
       properties:
         prompt:
           type: string
-          description: What to change in the clip.
+          description: "Description of the changes to make."
         input_video_url:
           type: string
           format: uri
-          description: >
-            Public `https` URL of an MP4, MOV or WebM file on a host that
-            supports range requests. Up to 100 MB.
+          description: "Public HTTPS URL of the clip to edit (MP4, MOV or WebM, up to 100 MB). The host must support range requests."
         model_id:
           type: string
-          description: An id from Video models.
+          description: "Video model to use. Available IDs are listed in Video models."
         aspect_ratio:
           type: string
+          description: "Shape of the video. Accepted values depend on the model."
         resolution:
           type: string
+          description: "Output resolution. Accepted values depend on the model."
         audio:
           type: boolean
-          description: Defaults to on for every model with an audio option.
+          description: "Keep or generate audio. On by default for models with an audio option."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [async]
+          enum: ["async"]
+          default: "async"
+          description: "Videos always run in the background. Only `async` is accepted."
 
     RecreateRequest:
       type: object
-      required: [input_image_url, reference_image_url]
+      required: ["input_image_url", "reference_image_url"]
       properties:
         input_image_url:
           type: string
           format: uri
-          description: The photo to restyle.
+          description: "The photo to restyle."
         reference_image_url:
           type: string
           format: uri
-          description: The photo whose style to copy.
+          description: "The photo whose style is copied."
         instructions:
           type: string
-          description: >
-            Extra wishes, as plain text. Any `[[...]]` in it is removed: people
-            are named only in `profile_ids`.
+          description: "Optional extra guidance. People are set only through `profile_ids`."
         profile_ids:
           type: array
           items:
             type: string
-          default: []
-          description: >
-            `profile_id` values from List profiles,
-            to keep identities. Every id must be one of your ready profiles; if
-            any is not, the request fails with `404 trained_profile_not_found`.
+          description: "Trained profiles whose identity should be kept. Use IDs from List profiles. Every ID must be one of your ready profiles."
         num_output_images:
           type: integer
+          default: 1
           minimum: 1
           maximum: 4
-          default: 1
-          description: Credits are charged per image.
+          description: "Number of images to generate. Credits are charged per image."
         output_format:
           type: string
-          enum: [jpeg, png]
-          default: jpeg
+          enum: ["jpeg", "png"]
+          default: "jpeg"
+          description: "Image file format."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: async
+          enum: ["sync", "async"]
+          default: "async"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     ProfilePhotoRequest:
       type: object
-      required: [prompt]
+      required: ["prompt"]
       properties:
         prompt:
           type: string
-          description: >
-            What the photo should show, with each person written as
-            `[[profile_id]]` (at least one).
+          description: "Description of the photo. Reference each person as `[[profile_id]]`; at least one profile is required."
         model_id:
           type: string
-          enum: [nano-banana-2, gpt-image-2]
-          default: nano-banana-2
+          enum: ["nano-banana-2", "gpt-image-2"]
+          default: "nano-banana-2"
+          description: "Image model to use."
         aspect_ratio:
           type: string
           enum: ["1:1", "3:4", "4:3", "9:16", "16:9"]
           default: "3:4"
+          description: "Shape of the output image."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
-          default: 1K
-          description: Higher costs more credits.
+          default: "1K"
+          description: "Output size. Larger sizes cost more credits."
         num_output_images:
           type: integer
+          default: 1
           minimum: 1
           maximum: 4
-          default: 1
-          description: Credits are charged per image.
+          description: "Number of images to generate. Credits are charged per image."
         output_format:
           type: string
-          enum: [jpeg, png]
-          default: jpeg
+          enum: ["jpeg", "png"]
+          default: "jpeg"
+          description: "Image file format."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: async
+          enum: ["sync", "async"]
+          default: "async"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     RecreateGroupRequest:
       type: object
-      required: [reference_image_url, profile_ids]
+      required: ["reference_image_url", "profile_ids"]
       properties:
         reference_image_url:
           type: string
           format: uri
-          description: The photo whose scene to recreate.
+          description: "Photo whose scene is recreated."
         profile_ids:
           type: array
-          minItems: 2
-          maxItems: 10
           items:
             type: string
-          description: >
-            2 to 10 `profile_id` values from List profiles,
-            in the order of the people in the reference. Every one must be one
-            of your ready profiles.
+          minItems: 2
+          maxItems: 10
+          description: "Profile IDs of the people to include, 2 to 10, in the order they appear in the reference photo. Every ID must be one of your ready profiles."
         instructions:
           type: string
-          description: >
-            Extra wishes, as plain text. Any `[[...]]` in it is removed: people
-            are named only in `profile_ids`.
+          description: "Optional extra guidance. People are set only through `profile_ids`."
         model_id:
           type: string
-          enum: [nano-banana-2, gpt-image-2]
-          default: nano-banana-2
+          enum: ["nano-banana-2", "gpt-image-2"]
+          default: "nano-banana-2"
+          description: "Image model to use."
         aspect_ratio:
           type: string
           enum: ["1:1", "3:4", "4:3", "9:16", "16:9"]
           default: "4:3"
+          description: "Shape of the output image."
         resolution:
           type: string
           enum: ["1K", "2K", "4K"]
-          default: 1K
+          default: "1K"
+          description: "Output size. Larger sizes cost more credits."
         num_output_images:
           type: integer
+          default: 1
           minimum: 1
           maximum: 4
-          default: 1
-          description: Credits are charged per image.
+          description: "Number of images to generate. Credits are charged per image."
         output_format:
           type: string
-          enum: [jpeg, png]
-          default: jpeg
+          enum: ["jpeg", "png"]
+          default: "jpeg"
+          description: "Image file format."
         webhook_url:
-          $ref: "#/components/schemas/WebhookUrl"
+          type: string
+          format: uri
+          description: "Optional HTTPS URL that is notified when the job finishes."
         mode:
           type: string
-          enum: [sync, async]
-          default: async
+          enum: ["sync", "async"]
+          default: "async"
+          description: "How the request is processed. `sync` waits for the result (up to 270 seconds); `async` returns a `job_id` immediately."
 
     Pagination:
       type: object
@@ -1980,7 +1860,7 @@ components:
         next_cursor:
           type: string
           nullable: true
-          description: Send as `cursor` to get the next page.
+          description: "Pass as `cursor` to get the next page. `null` on the last page."
         has_more:
           type: boolean
 
@@ -1989,17 +1869,14 @@ components:
       properties:
         id:
           type: integer
-          example: 5120
         uri:
           type: string
           format: uri
           description: The file URL.
         media_type:
           type: string
-          example: image
         mime_type:
           type: string
-          example: image/jpeg
         is_liked:
           type: boolean
         is_disliked:
@@ -2019,13 +1896,10 @@ components:
           properties:
             tool_name:
               type: string
-              example: age_modify
             flow_type:
               type: string
-              example: ai_tools
             media_type:
               type: string
-              example: image
         created_at:
           type: string
           format: date-time
@@ -2035,16 +1909,13 @@ components:
       properties:
         id:
           type: integer
-          example: 3301
         uri:
           type: string
           format: uri
         media_type:
           type: string
-          example: image
         mime_type:
           type: string
-          example: image/jpeg
         config:
           nullable: true
         created_at:
@@ -2060,13 +1931,10 @@ components:
           description: The generation id. It is the same as the `job_id` you got when you made it.
         media_type:
           type: string
-          example: image
         flow_type:
           type: string
-          example: ai_tools
         tool_name:
           type: string
-          example: age_modify
         status:
           type: string
           enum: [pending, processing, completed, failed, abandoned]
@@ -2125,13 +1993,11 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           type: object
           properties:
             credits:
               type: integer
-              example: 112
               description: Your current credit balance.
             created_at:
               type: string
@@ -2143,7 +2009,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           type: object
           properties:
@@ -2154,21 +2019,17 @@ components:
                 properties:
                   id:
                     type: integer
-                    example: 9021
                   transaction_type:
                     type: string
                     enum: [purchase, deduction, debit, refund]
                   event_type:
                     type: string
-                    example: image_generation
                     description: What caused it.
                   amount:
                     type: integer
-                    example: -8
                     description: The credits added or taken.
                   balance_after:
                     type: integer
-                    example: 112
                   created_at:
                     type: string
                     format: date-time
@@ -2180,7 +2041,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           type: object
           properties:
@@ -2196,7 +2056,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           $ref: "#/components/schemas/GenerationItem"
 
@@ -2205,7 +2064,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           type: object
           properties:
@@ -2221,7 +2079,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           $ref: "#/components/schemas/ImageItem"
 
@@ -2230,7 +2087,6 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           type: object
           properties:
@@ -2246,6 +2102,5 @@ components:
       properties:
         status:
           type: integer
-          example: 200
         data:
           $ref: "#/components/schemas/UploadItem"
