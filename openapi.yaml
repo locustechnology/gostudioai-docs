@@ -787,21 +787,11 @@ paths:
           description: "Filter by tool, comma-separated (for example `age_modify`, `ai_image`, `ai_video`)."
           schema:
             type: string
-        - name: profile_id
-          in: query
-          description: "Only items made with this trained profile."
-          schema:
-            type: integer
         - name: search
           in: query
-          description: "Search the prompt text."
+          description: "Matches the tool name or your prompt."
           schema:
             type: string
-        - name: is_liked
-          in: query
-          description: "Filter by liked items: `true` or `false`."
-          schema:
-            type: boolean
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Sort"
@@ -1063,7 +1053,7 @@ components:
 
 
         **Get your API key:** GoStudio → Login → Profile → Account settings →
-        Generate API key. See [Authentication](/authentication) for the full
+        Generate API key. See [Authentication](/api-reference/authentication) for the full
         steps.
 
   parameters:
@@ -1938,12 +1928,6 @@ components:
         status:
           type: string
           enum: [pending, processing, completed, failed, abandoned]
-        profile_ids:
-          type: array
-          nullable: true
-          items:
-            type: string
-          description: The trained profiles it used.
         resolution:
           type: string
           nullable: true
