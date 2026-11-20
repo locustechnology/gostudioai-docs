@@ -518,3 +518,19 @@ button,
   font-size: 14px !important;
   line-height: 1.7 !important;
 }
+
+/* ===========================================================================
+   Links: one underline, no stacked effects.
+   Mintlify draws its own bottom border (and thickens it on hover) on top of the
+   text underline set above, which showed as two lines. Keep the single text
+   underline and change only the colour on hover.
+   =========================================================================== */
+.mdx-content a:not(.card):not([class*="button"]),
+.mdx-content a:not(.card):not([class*="button"]):hover,
+.mdx-content a.link,
+.mdx-content a.link:hover {
+  border-bottom: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  text-decoration-thickness: 1px !important;
+}
