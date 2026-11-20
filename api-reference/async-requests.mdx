@@ -1,29 +1,16 @@
 ---
 title: "Asynchronous requests"
-description: "Run long jobs in the background, poll for results, and get an optional webhook."
+description: "Run jobs in the background, poll for the result, and get a webhook when they finish."
 ---
 
-Every generation request creates a **job**. In **sync** mode the request waits for the result, up to 270 seconds. In **async** mode you get a `job_id` and a `poll_url` straight away, and the job runs in the background.
+Every generation request creates a **job**. You choose how to wait for it with `mode`:
 
-<Note>
-Polling is the source of truth. A webhook is an optional extra on top of polling.
-</Note>
+- **`sync`:** the request waits for the result, up to 270 seconds.
+- **`async`:** you get a `job_id` and a `poll_url` straight away, and the job runs in the background.
 
-## When to use it
+If a `sync` request runs out of time, it returns `202` like an `async` request, and the job keeps running.
 
-- **Video:** always async.
-- **Recreate, Profile Photo, Recreate Group and Group Photo:** async by default.
-- Any job you don't want to hold a connection open for.
-- Many jobs at once, sent without waiting for each one.
-
-For fast tools (Age Modifier, Watermark Remover, Weight Shift, Image), sync is simpler: the result comes back in the same response.
-
-## Request fields
-
-| Field | Type | Description |
-|---|---|---|
-| `mode` | string | `sync` or `async`. Defaults below. Video takes only `async`, or leave it out. |
-| `webhook_url` | string | Optional. Public `https` URL that we `POST` to when the job finishes. Works in both modes. |
+## Choosing a mode
 
 | Endpoint | Default `mode` |
 |---|---|
@@ -31,119 +18,95 @@ For fast tools (Age Modifier, Watermark Remover, Weight Shift, Image), sync is s
 | Group Photo, Recreate, Profile Photo, Recreate Group | `async` |
 | All Video endpoints | Always `async` |
 
-Watermark Remover with `model_id: "lite"` is fast enough that it always answers `200` with the result, even with `mode: "async"`.
+Video takes only `async`, or leave `mode` out. Watermark Remover with `model_id: "lite"` always answers `200` with the result, even with `mode: "async"`.
 
-## Responses
+Use `async` for anything you don't want to hold a connection open for, and for many jobs at once. Use `sync` for fast tools, where the result comes back in the same response.
 
-Every generation endpoint answers in one of two shapes.
+## How async works
 
-**`200`: finished** (sync)
+<Steps>
+  <Step title="Submit the job">
+    Send the request with `mode: "async"`. You get `202` straight away.
 
-```json
-{
-  "status": 200,
-  "data": {
-    "job_id": "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f",
-    "status": "completed",
-    "output_urls": ["https://…/result.jpg"],
-    "credits_deducted": 8,
-    "credit_balance": 112
-  }
-}
-```
+    <CodeGroup>
+    ```bash curl
+    curl -X POST https://www.gostudio.ai/api/v2/recreate \
+      -H "Authorization: Bearer <api_key>" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "input_image_url": "https://example.com/me.jpg",
+        "reference_image_url": "https://example.com/style.jpg",
+        "mode": "async"
+      }'
+    ```
 
-**`202`: still running** (async, or sync that ran out of time)
+    ```python Python
+    import requests
 
-```json
-{
-  "status": 202,
-  "data": {
-    "job_id": "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f",
-    "status": "processing",
-    "credits_deducted": 8,
-    "poll_url": "https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
-  }
-}
-```
+    API = "https://www.gostudio.ai/api/v2"
+    HEADERS = {"Authorization": "Bearer <api_key>"}
 
-Endpoints that take a `model_id` also return `model_id`.
+    job = requests.post(f"{API}/recreate", headers=HEADERS, json={
+        "input_image_url": "https://example.com/me.jpg",
+        "reference_image_url": "https://example.com/style.jpg",
+        "mode": "async",
+    }).json()["data"]
+    ```
+    </CodeGroup>
 
-**Step 1: Submit the job**
+    ```json
+    {
+      "status": 202,
+      "data": {
+        "job_id": "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f",
+        "status": "processing",
+        "credits_deducted": 10,
+        "poll_url": "https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f"
+      }
+    }
+    ```
 
-<CodeGroup>
-```bash curl
-curl -X POST https://www.gostudio.ai/api/v2/recreate \
-  -H "Authorization: Bearer <api_key>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "input_image_url": "https://example.com/me.jpg",
-    "reference_image_url": "https://example.com/style.jpg",
-    "mode": "async",
-    "webhook_url": "https://your-app.com/webhooks/gostudio"
-  }'
-```
+    <Warning>
+    Do not send the request again after a `202`. The job is still running, and a second request creates a second job and is charged again.
+    </Warning>
+  </Step>
 
-```python Python
-import requests
+  <Step title="Poll for the result">
+    Call `poll_url` (or [Get job](/api-reference/jobs/get-job-poll)) every 5 seconds until `status` is no longer `pending` or `processing`.
 
-API = "https://www.gostudio.ai/api/v2"
-HEADERS = {"Authorization": "Bearer <api_key>"}
+    <CodeGroup>
+    ```bash curl
+    curl https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f \
+      -H "Authorization: Bearer <api_key>"
+    ```
 
-job = requests.post(f"{API}/recreate", headers=HEADERS, json={
-    "input_image_url": "https://example.com/me.jpg",
-    "reference_image_url": "https://example.com/style.jpg",
-    "mode": "async",
-}).json()["data"]
-```
-</CodeGroup>
+    ```python Python
+    import time
 
-You get the `202` response above.
+    while True:
+        result = requests.get(job["poll_url"], headers=HEADERS).json()["data"]
+        if result["status"] not in ("pending", "processing"):
+            break
+        time.sleep(5)
+    ```
+    </CodeGroup>
 
-**Step 2: Poll for the result**
+    | `status` | Meaning |
+    |---|---|
+    | `pending`, `processing` | Still running. Keep polling. |
+    | `completed` | Done. The files are in `output_urls`. |
+    | `failed` | Read `error`. Your credits are returned. |
+    | `abandoned` | The job was stopped. No result will come. |
+  </Step>
 
-Call `poll_url` (or [`GET /jobs/{job_id}`](/api-reference/jobs/get-job-poll)) every 5 seconds.
+  <Step title="Or use a webhook (optional)">
+    Send a `webhook_url` and we `POST` to it once when the job finishes. It works in both modes, and polling still works alongside it.
+  </Step>
+</Steps>
 
-<CodeGroup>
-```bash curl
-curl https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f \
-  -H "Authorization: Bearer <api_key>"
-```
+## Webhooks
 
-```python Python
-import time
-
-while True:
-    result = requests.get(job["poll_url"], headers=HEADERS).json()["data"]
-    if result["status"] not in ("pending", "processing"):
-        break
-    time.sleep(5)
-```
-</CodeGroup>
-
-```json
-{
-  "status": 200,
-  "data": {
-    "job_id": "3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f",
-    "status": "completed",
-    "tool_name": "recreate",
-    "created_at": "2026-11-05T10:00:00Z",
-    "updated_at": "2026-11-05T10:00:41Z",
-    "output_urls": ["https://…/result.jpg"]
-  }
-}
-```
-
-| `status` | Meaning |
-|---|---|
-| `pending`, `processing` | Still running. Keep polling. |
-| `completed` | Done. The files are in `output_urls`. |
-| `failed` | Read `error` (`type`, `code`, `message`). Your credits are returned. |
-| `abandoned` | The job was stopped and no longer exists. No result will come. |
-
-**Step 3: Optional webhook**
-
-Send a `webhook_url` and we `POST` to it once when the job finishes.
+Add `webhook_url` to any generation request.
 
 ```json
 {
@@ -159,30 +122,15 @@ A failed job sends `"event": "job.failed"`, `"status": "failed"` and an `error` 
 
 - The URL must be public `https` on port 443, with no username or password, and up to 2048 characters.
 - We do not follow redirects.
-- If your server does not answer with `2xx` (timeout, network error, `408`, `429` or `5xx`), we try again. There are 5 attempts in total over about 90 seconds.
+- If your server does not answer with `2xx` (timeout, network error, `408`, `429` or `5xx`), we try again, 5 attempts in total over about 90 seconds.
 
 <Warning>
-Webhooks are not signed yet. When one arrives, confirm the result with `GET /jobs/{job_id}` before you use it.
+Webhooks are not signed yet. When one arrives, confirm the result with [Get job](/api-reference/jobs/get-job-poll) before you use it.
 </Warning>
-
-## Billing
-
-Credits are taken when the job is accepted and shown in `credits_deducted`. If the job fails, they are returned automatically. Do not send the same request again after a `202`: that creates a second job and charges again.
-
-## Errors
-
-| HTTP | `code` | When |
-|---|---|---|
-| 400 | `invalid_input` | `mode` is not `sync` or `async`, or a video request sent `mode` other than `async`. |
-| 400 | `invalid_webhook_url` | `webhook_url` is not a public `https` URL. |
-| 404 | `job_not_found` | No such job for your key. |
-| 429 | `rate_limited` | Polled too often. Poll every 5 seconds. |
-
-All other codes are on [Errors](/resources/errors).
 
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Quickstart" href="/api-reference/quickstart">Your first image and video, step by step.</Card>
-  <Card title="Get a job" href="/api-reference/jobs/get-job-poll">The full job status reference.</Card>
+  <Card title="Get job" href="/api-reference/jobs/get-job-poll">The full job status reference.</Card>
 </CardGroup>

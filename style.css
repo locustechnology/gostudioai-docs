@@ -205,6 +205,13 @@
   font-size: inherit !important;
 }
 
+/* The POST / GET badge keeps its small size; inheriting 15px made it overflow
+   its box and run into the endpoint name. */
+#sidebar .method-nav-pill span,
+#navigation-items .method-nav-pill span {
+  font-size: 0.55rem !important;
+}
+
 /* Group headings in the sidebar ("Get Started", "Core Concepts") — these are
    nav labels, not headings, so they take the eyebrow treatment. Mintlify marks
    them up as h3.sidebar-title inside .sidebar-group-header. */
