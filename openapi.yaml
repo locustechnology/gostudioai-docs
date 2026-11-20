@@ -157,9 +157,35 @@ paths:
                   instructions: stock photo watermark
       responses:
         "200":
-          $ref: "#/components/responses/GenerationCompleted"
+          description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationCompletedModelResponse"
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  output_urls:
+                    - https://example.com/result.jpg
+                  model_id: lite
+                  credits_deducted: 2
+                  credit_balance: 112
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: lite
+                  credits_deducted: 2
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -283,9 +309,35 @@ paths:
                   resolution: 2K
       responses:
         "200":
-          $ref: "#/components/responses/GenerationCompleted"
+          description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationCompletedModelResponse"
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  output_urls:
+                    - https://example.com/result.jpg
+                  model_id: gpt-image-2-6-sunburst
+                  credits_deducted: 8
+                  credit_balance: 112
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: gpt-image-2-6-sunburst
+                  credits_deducted: 8
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -325,9 +377,35 @@ paths:
                     - https://example.com/photo.jpg
       responses:
         "200":
-          $ref: "#/components/responses/GenerationCompleted"
+          description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationCompletedModelResponse"
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  output_urls:
+                    - https://example.com/result.jpg
+                  model_id: gpt-image-2-6-sunburst
+                  credits_deducted: 8
+                  credit_balance: 112
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: gpt-image-2-6-sunburst
+                  credits_deducted: 8
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -384,7 +462,19 @@ paths:
                   resolution: 720p
       responses:
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: seedance2-fast
+                  credits_deducted: 55
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -424,7 +514,19 @@ paths:
                   model_id: wan30
       responses:
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: seedance2-fast
+                  credits_deducted: 55
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -465,7 +567,19 @@ paths:
                   model_id: wan30-reference
       responses:
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: wan30-reference
+                  credits_deducted: 50
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -505,7 +619,19 @@ paths:
                   model_id: kling-v4-video-edit
       responses:
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: omni-flash-video-edit-v1.2
+                  credits_deducted: 27
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -605,9 +731,35 @@ paths:
                   resolution: 2K
       responses:
         "200":
-          $ref: "#/components/responses/GenerationCompleted"
+          description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationCompletedModelResponse"
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  output_urls:
+                    - https://example.com/result.jpg
+                  model_id: nano-banana-2
+                  credits_deducted: 10
+                  credit_balance: 112
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: nano-banana-2
+                  credits_deducted: 10
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -650,9 +802,35 @@ paths:
                     - 7c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f
       responses:
         "200":
-          $ref: "#/components/responses/GenerationCompleted"
+          description: "Job completed. Returned when `mode` is `sync` and the result is ready in time."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationCompletedModelResponse"
+              example:
+                status: 200
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: completed
+                  output_urls:
+                    - https://example.com/result.jpg
+                  model_id: nano-banana-2
+                  credits_deducted: 10
+                  credit_balance: 112
         "202":
-          $ref: "#/components/responses/GenerationAccepted"
+          description: "Job accepted and still processing. Fetch the result from `poll_url`. Do not resend the request."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationAcceptedModelResponse"
+              example:
+                status: 202
+                data:
+                  job_id: 3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
+                  status: processing
+                  model_id: nano-banana-2
+                  credits_deducted: 10
+                  poll_url: https://www.gostudio.ai/api/v2/jobs/3f2b8c1e-5d4a-4c1b-9e7a-0a1b2c3d4e5f
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -1275,9 +1453,6 @@ components:
                 type: string
                 format: uri
               description: "URLs of the generated files."
-            model_id:
-              type: string
-              description: "Model or tier used. Returned by Watermark Remover, Image create and edit, Profile Photo and Recreate Group."
             credits_deducted:
               type: integer
               description: "Credits charged for this job."
@@ -1303,9 +1478,6 @@ components:
               type: string
               enum: [pending, processing]
               description: "State of the job."
-            model_id:
-              type: string
-              description: "Model or tier used. Returned by Watermark Remover, Image create and edit, Profile Photo and Recreate Group."
             credits_deducted:
               type: integer
               description: "Credits charged for this job. Returned automatically if the job fails."
@@ -1313,6 +1485,70 @@ components:
               type: string
               format: uri
               description: "URL to poll for the result. See Get job."
+
+    GenerationCompletedModelResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: "HTTP status code."
+        data:
+          type: object
+          description: "The finished job."
+          properties:
+            job_id:
+              type: string
+              format: uuid
+              description: "Unique ID of the job."
+            status:
+              type: string
+              enum: [completed]
+              description: "State of the job."
+            output_urls:
+              type: array
+              items:
+                type: string
+                format: uri
+              description: "URLs of the generated files."
+            model_id:
+              type: string
+              description: "Model or tier used for this job."
+            credits_deducted:
+              type: integer
+              description: "Credits charged for this job."
+            credit_balance:
+              type: integer
+              description: "Your remaining credits."
+
+    GenerationAcceptedModelResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: "HTTP status code."
+        data:
+          type: object
+          description: "The accepted job."
+          properties:
+            job_id:
+              type: string
+              format: uuid
+              description: "Unique ID of the job."
+            status:
+              type: string
+              enum: [pending, processing]
+              description: "State of the job."
+            model_id:
+              type: string
+              description: "Model or tier used for this job."
+            credits_deducted:
+              type: integer
+              description: "Credits charged for this job. Returned automatically if the job fails."
+            poll_url:
+              type: string
+              format: uri
+              description: "URL to poll for the result. See Get job."
+
 
     JobResponse:
       type: object
