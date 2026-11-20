@@ -519,6 +519,61 @@ button,
   line-height: 1.7 !important;
 }
 
+/* Footer legal line, added by footer.js: socials on the left, GoStudio
+   copyright and legal links beside them. */
+.gs-footer-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.gs-legal {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  font-size: 14px;
+  color: var(--gs-muted);
+}
+
+.gs-legal a {
+  color: var(--gs-muted);
+  text-decoration: none;
+}
+
+.gs-legal a:hover {
+  color: var(--gs-brand);
+}
+
+/* Footer social icons turn brand purple on hover. */
+#footer a[href*="linkedin.com"]:hover,
+#footer a[href*="instagram.com"]:hover,
+#footer a[href*="facebook.com"]:hover,
+#footer a[href*="x.com"]:hover,
+#footer a[href*="twitter.com"]:hover,
+#footer a[href*="youtube.com"]:hover,
+#footer a[href*="discord"]:hover,
+#footer a[href="https://www.gostudio.ai"]:hover {
+  color: var(--gs-brand) !important;
+}
+
+#footer a:hover svg {
+  color: var(--gs-brand) !important;
+  fill: currentColor;
+}
+
+/* Mintlify draws some icons as a masked box; those take their colour from the background. */
+#footer a:hover [style*="mask"],
+#footer a:hover svg[style*="mask"] {
+  background-color: var(--gs-brand) !important;
+}
+
+#footer a svg {
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
 /* ===========================================================================
    Links: one underline, no stacked effects.
    Mintlify draws its own bottom border (and thickens it on hover) on top of the

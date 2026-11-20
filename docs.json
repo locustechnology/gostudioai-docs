@@ -32,7 +32,9 @@
         "groups": [
           {
             "group": "Overview",
-            "pages": ["index"]
+            "pages": [
+              "index"
+            ]
           },
           {
             "group": "Guides",
@@ -61,7 +63,11 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": ["api-reference/quickstart", "api-reference/authentication", "api-reference/async-requests"]
+            "pages": [
+              "api-reference/quickstart",
+              "api-reference/authentication",
+              "api-reference/async-requests"
+            ]
           },
           {
             "group": "Recreate",
@@ -100,11 +106,15 @@
           },
           {
             "group": "Jobs",
-            "pages": ["openapi.yaml GET /api/v2/jobs/{job_id}"]
+            "pages": [
+              "openapi.yaml GET /api/v2/jobs/{job_id}"
+            ]
           },
           {
             "group": "Profiles",
-            "pages": ["openapi.yaml GET /api/v2/profiles"]
+            "pages": [
+              "openapi.yaml GET /api/v2/profiles"
+            ]
           },
           {
             "group": "My data",
@@ -142,39 +152,7 @@
       "linkedin": "https://www.linkedin.com/company/106690651",
       "instagram": "https://www.instagram.com/gostudioai/",
       "facebook": "https://www.facebook.com/profile.php?id=61576148559681"
-    },
-    "links": [
-      {
-        "header": "Product",
-        "items": [
-          {
-            "label": "GoStudio",
-            "href": "https://www.gostudio.ai"
-          },
-          {
-            "label": "Support",
-            "href": "mailto:support@gostudio.ai"
-          }
-        ]
-      },
-      {
-        "header": "Developers",
-        "items": [
-          {
-            "label": "Quickstart",
-            "href": "/api-reference/quickstart"
-          },
-          {
-            "label": "Authentication",
-            "href": "/api-reference/authentication"
-          },
-          {
-            "label": "Error Codes",
-            "href": "/resources/errors"
-          }
-        ]
-      }
-    ]
+    }
   },
   "redirects": [
     {
@@ -334,7 +312,11 @@
       "display": "interactive"
     },
     "examples": {
-      "languages": ["curl", "javascript", "python"]
+      "languages": [
+        "curl",
+        "javascript",
+        "python"
+      ]
     }
   }
 }
