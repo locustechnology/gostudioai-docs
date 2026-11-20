@@ -37,12 +37,12 @@
           {
             "group": "Guides",
             "pages": [
-              "guides/watermark-remover",
-              "guides/recreate-photo",
-              "guides/group-photo",
-              "guides/age-modifier",
-              "guides/image-to-prompt",
-              "guides/job-status"
+              "guides/use-cases",
+              "guides/apps",
+              "guides/ai-image",
+              "guides/ai-video",
+              "guides/recreate",
+              "guides/best-practices"
             ]
           },
           {
@@ -60,7 +60,7 @@
         "tab": "API reference",
         "groups": [
           {
-            "group": "Get started",
+            "group": "Getting started",
             "pages": ["api-reference/quickstart", "api-reference/authentication", "api-reference/async-requests"]
           },
           {
@@ -240,6 +240,66 @@
     {
       "source": "/pagination",
       "destination": "/api-reference/quickstart",
+      "permanent": true
+    },
+    {
+      "source": "/guides/watermark-remover",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/watermark-remover",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/guides/age-modifier",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/age-modifier",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/guides/group-photo",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/group-photo",
+      "destination": "/guides/apps",
+      "permanent": true
+    },
+    {
+      "source": "/guides/recreate-photo",
+      "destination": "/guides/recreate",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/recreate-photo",
+      "destination": "/guides/recreate",
+      "permanent": true
+    },
+    {
+      "source": "/guides/image-to-prompt",
+      "destination": "/guides/ai-image",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/image-to-prompt",
+      "destination": "/guides/ai-image",
+      "permanent": true
+    },
+    {
+      "source": "/guides/job-status",
+      "destination": "/api-reference/async-requests",
+      "permanent": true
+    },
+    {
+      "source": "/docs/guides/job-status",
+      "destination": "/api-reference/async-requests",
       "permanent": true
     },
     {
