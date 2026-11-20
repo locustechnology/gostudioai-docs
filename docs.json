@@ -55,9 +55,11 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "Jobs",
+            "group": "Recreate",
             "pages": [
-              "openapi.yaml GET /api/v2/jobs/{job_id}"
+              "openapi.yaml POST /api/v2/recreate",
+              "openapi.yaml POST /api/v2/profile-photo",
+              "openapi.yaml POST /api/v2/recreate-group"
             ]
           },
           {
@@ -88,11 +90,9 @@
             ]
           },
           {
-            "group": "Recreate",
+            "group": "Jobs",
             "pages": [
-              "openapi.yaml POST /api/v2/recreate",
-              "openapi.yaml POST /api/v2/profile-photo",
-              "openapi.yaml POST /api/v2/recreate-group"
+              "openapi.yaml GET /api/v2/jobs/{job_id}"
             ]
           },
           {

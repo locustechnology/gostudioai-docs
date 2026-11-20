@@ -817,7 +817,7 @@ paths:
     get:
       tags: [My data]
       operationId: getCreditBalance
-      summary: Credit balance
+      summary: Get credit balance
       description: >
         Returns how many credits you have now. You only ever see your own data.
       responses:
@@ -844,7 +844,7 @@ paths:
     get:
       tags: [My data]
       operationId: listCreditHistory
-      summary: Credit history
+      summary: Get credit history
       description: >
         Lists every credit purchase, charge and refund on your account. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
       parameters:
@@ -883,7 +883,7 @@ paths:
     get:
       tags: [My data]
       operationId: listGenerations
-      summary: List generations
+      summary: Get generations
       description: >
         Lists the generations you made (images and videos, from the web, the apps and the API). Each one has its outputs and the files it started from. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
       parameters:
@@ -952,7 +952,7 @@ paths:
     get:
       tags: [My data]
       operationId: getGeneration
-      summary: Get a generation
+      summary: Get generation details
       description: >
         Returns one of your generations, in the same shape as an item of the list. You only ever see your own data.
       parameters:
@@ -994,7 +994,7 @@ paths:
     get:
       tags: [My data]
       operationId: listImages
-      summary: List images
+      summary: Get generated images
       description: >
         Lists the pictures and videos your generations made. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
       parameters:
@@ -1052,7 +1052,7 @@ paths:
     get:
       tags: [My data]
       operationId: getImage
-      summary: Get an image
+      summary: Get generated image
       description: >
         Returns one of your images or videos. You only ever see your own data. Someone else's id returns the same 404 as an id that does not exist.
       parameters:
@@ -1060,7 +1060,7 @@ paths:
           in: path
           required: true
           description: >
-            The image id from List images or a generation's `images`.
+            The image id from Get generated images or a generation's `images`.
           schema:
             type: integer
       responses:
@@ -1093,7 +1093,7 @@ paths:
     get:
       tags: [My data]
       operationId: listUploads
-      summary: List uploads
+      summary: Get uploaded images
       description: >
         Lists the files you uploaded, and the input files your generations used. Lists are paged: the reply has `data` (this page) and `pagination` with `has_more` and `next_cursor`. To get the next page, send `next_cursor` as `cursor`. A filter value that is not on its list is ignored, not an error.
       parameters:
@@ -1151,7 +1151,7 @@ paths:
     get:
       tags: [My data]
       operationId: getUpload
-      summary: Get an upload
+      summary: Get uploaded image
       description: >
         Returns one of your uploaded files. You only ever see your own data. Someone else's id returns the same 404 as an id that does not exist.
       parameters:
@@ -1159,7 +1159,7 @@ paths:
           in: path
           required: true
           description: >
-            The upload id from List uploads.
+            The upload id from Get uploaded images.
           schema:
             type: integer
       responses:
