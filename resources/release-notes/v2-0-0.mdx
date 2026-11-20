@@ -1,0 +1,42 @@
+---
+title: "v2.0.0"
+description: "First release of the GoStudio API v2. November 2026."
+---
+
+[Release notes](/resources/release-notes) / v2.0.0
+
+GoStudio API v2 is available. Every endpoint uses the same request and response format, and you authenticate with your API key.
+
+## Apps
+
+- [Age Modifier](/api-reference/apps/age-modifier), [Watermark Remover](/api-reference/apps/watermark-remover), [Weight Shift](/api-reference/apps/weight-shift) and [Group Photo](/api-reference/apps/group-photo).
+- Guide: [Apps](/guides/apps).
+
+## AI Image
+
+- [Create](/api-reference/ai-image/image-create) images from a prompt and [edit](/api-reference/ai-image/image-edit) images with a prompt.
+- [Image models](/api-reference/ai-image/image-models) lists the available models and their options.
+- Guide: [AI Image](/guides/ai-image).
+
+## AI Video
+
+- Make a video from a [prompt](/api-reference/ai-video/video-create), from [keyframes](/api-reference/ai-video/video-keyframes) or from [reference images](/api-reference/ai-video/video-reference), or [edit an existing clip](/api-reference/ai-video/video-edit).
+- [Video models](/api-reference/ai-video/video-models) lists the available models and their options.
+- Guide: [AI Video](/guides/ai-video).
+
+## Recreate
+
+- [Recreate](/api-reference/recreate/recreate) a photo, make a [Profile Photo](/api-reference/recreate/profile-photo) and [Recreate Group](/api-reference/recreate/recreate-group) scenes with your trained profiles.
+- [List profiles](/api-reference/profiles/list-profiles) returns the profiles you can use.
+- Guide: [Recreate](/guides/recreate).
+
+## Your account
+
+- Read your [credit balance](/api-reference/my-data/get-credit-balance) and [credit history](/api-reference/my-data/get-credit-history).
+- List and fetch your [generations](/api-reference/my-data/get-generations), [generated images](/api-reference/my-data/get-generated-images) and [uploaded images](/api-reference/my-data/get-uploaded-images).
+
+## Jobs and billing
+
+- Choose `sync` or `async` for each request, and check a job with [Get job](/api-reference/jobs/get-job-poll). See [Asynchronous requests](/api-reference/async-requests).
+- Add a `webhook_url` to be notified when a job finishes.
+- Credits are charged when a job is accepted and returned automatically if it fails. See [API pricing](/resources/pricing).
